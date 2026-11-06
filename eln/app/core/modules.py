@@ -122,7 +122,11 @@ class ModuleBase:
         return []
 
     def import_handlers(self) -> dict[str, Callable]:
-        """Importfunktionen: Name -> Funktion(db, rows, user) -> (anzahl, fehler)."""
+        """Importfunktionen für die Importseite.
+
+        Rückgabe: {Bezeichnung: funktion(db, actor, rows, commit) -> services.importer.ImportReport}.
+        Bei ``commit=False`` nur prüfen. Erscheinen unter Import als »Modul: Bezeichnung«.
+        """
         return {}
 
     def default_config(self) -> dict:

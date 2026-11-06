@@ -139,6 +139,50 @@ def build_router() -> APIRouter:
     return router
 
 
+def import_values(db, actor, rows, commit):
+    """Import von MVR-Einzelwerten (eine Zeile je Wert; gleiche Probe/Bedingung = eine Prüfung)."""
+    from ...models import Sample
+    from ...services import audit
+    from ...services.importer import ImportReport
+    from ...services.numbering import next_code
+
+    report = ImportReport(total_rows=len(rows))
+    groups: dict[tuple, dict] = {}
+    for n, row in enumerate(rows, start=2):
+        r = {str(k).strip().lower(): v for k, v in row.items()}
+        sample = db.query(Sample).filter(Sample.code == str(r.get("sample") or "").strip()).first()
+        if sample is None:
+            report.errors.append((n, "sample", f"Probe »{r.get('sample')}« nicht gefunden."))
+            continue
+        try:
+            temp, load = parse_number(r.get("temperature_c")), parse_number(r.get("load_kg"))
+            value, dens = parse_number(r.get("value")), parse_number(r.get("melt_density"))
+        except ValueError:
+            report.errors.append((n, "Zahl", "Bitte gültige Zahlen eingeben (z. B. 2,16)."))
+            continue
+        if temp is None or load is None or value is None:
+            report.errors.append((n, "temperature_c/load_kg/value", "Pflichtfeld – bitte ausfüllen."))
+            continue
+        if sample.experiment is not None and sample.experiment.locked:
+            report.errors.append((n, "sample", f"Versuch {sample.experiment.code} ist gesperrt."))
+            continue
+        g = groups.setdefault((sample.id, temp, load), {"sample": sample, "density": dens, "values": []})
+        g["values"].append(value)
+    if report.errors or not commit:
+        return report
+    for (sid, temp, load), g in groups.items():
+        t = MvrTest(code=next_code(db, "mvr", prefix="MVR"), sample_id=sid, experiment_id=g["sample"].experiment_id,
+                    temperature_c=temp, load_kg=load, melt_density=g["density"], values_json=json.dumps(g["values"]),
+                    remark="Import", created_by_id=actor.user_id, updated_by_id=actor.user_id)
+        db.add(t)
+        db.flush()
+        audit.log(db, actor, "create", entity_type="mvr_test", entity=t, new=f"Import: {len(g['values'])} Werte")
+        report.created += 1
+        report.created_codes.append(t.code)
+    report.committed = True
+    return report
+
+
 def _panel(db, experiment, user):
     return {"tests": db.query(MvrTest).filter(MvrTest.experiment_id == experiment.id).all()}
 
@@ -168,6 +212,9 @@ class MvrModule(ModuleBase):
 
     def experiment_panels(self):
         return [ExperimentPanel("MVR / MFR", "mvr/panel.html", _panel)]
+
+    def import_handlers(self):
+        return {"Einzelwerte": import_values}
 
     def dossier_sections(self, db, experiment):
         tests = db.query(MvrTest).filter(MvrTest.experiment_id == experiment.id).all()

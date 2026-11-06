@@ -93,3 +93,33 @@ def test_mvr_example_module(client_factory, dbs, sample_data):
     c.post(r.headers["location"] + "/uebernehmen")
     m = dbs.query(Measurement).one()
     assert m.property_name == "MVR" and len(m.values) == 3
+
+
+def test_module_import_handler(client_factory, dbs, sample_data):
+    import io
+
+    from app.modules.mvr.models import MvrTest
+
+    c = client_factory("wiss")
+    c.post("/proben/neu", {"name": "Granulat", "sample_type": "Compound / Granulat", "status": "vorhanden"})
+    code = dbs.query(Sample).one().code
+    assert "Modul MVR / MFR: Einzelwerte" in c.get("/import").text
+    csv = f"sample;temperature_c;load_kg;value\n{code};230;2,16;12,1\n{code};230;2,16;12,3\n"
+    r = c.post("/import", {"entity": "mod:mvr:Einzelwerte", "commit": "1", "filename": "m.csv",
+                           "payload": __import__("base64").b64encode(csv.encode()).decode()})
+    assert "1 Datensätze importiert" in r.text
+    assert dbs.query(MvrTest).one().values == [12.1, 12.3]
+
+
+def test_module_config_editable(client_factory, dbs):
+    import json
+
+    from app.models import ModuleState
+
+    c = client_factory("admin")
+    cfg = {"default_zones": ["Einzug", "Z1", "Düse"], "zone_templates": {}}
+    assert c.post("/admin/module/compounding/konfiguration", {"config": json.dumps(cfg)}).status_code == 303
+    dbs.expire_all()
+    assert dbs.get(ModuleState, "compounding").config["default_zones"] == ["Einzug", "Z1", "Düse"]
+    r = c.post("/admin/module/compounding/konfiguration", {"config": "[kaputt"}, follow=True)
+    assert "Ungültiges JSON" in r.text

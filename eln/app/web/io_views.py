@@ -15,10 +15,34 @@ router = APIRouter()
 MAX_IMPORT_BYTES = 20 * 1024 * 1024
 
 
+def _importable(ctx: Ctx) -> dict[str, str]:
+    """Kern-Datensatztypen plus Importfunktionen aktiver Module."""
+    from ..core.modules import get_registry
+
+    items = dict(importer.IMPORTABLE)
+    for m in get_registry().enabled(ctx.db):
+        for label in m.import_handlers():
+            items[f"mod:{m.key}:{label}"] = f"Modul {m.name}: {label}"
+    return items
+
+
+def _module_handler(ctx: Ctx, key: str):
+    from ..core.modules import get_registry
+
+    _, mkey, label = key.split(":", 2)
+    module = get_registry().get(mkey)
+    if module is None or not get_registry().is_enabled(ctx.db, mkey):
+        raise RecordError("Modul nicht aktiv.")
+    handler = module.import_handlers().get(label)
+    if handler is None:
+        raise RecordError("Importfunktion nicht gefunden.")
+    return handler
+
+
 @router.get("/import")
 def import_page(ctx: Ctx = Depends(get_ctx)):
     ctx.require("import")
-    return ctx.render("io/import.html", importable=importer.IMPORTABLE)
+    return ctx.render("io/import.html", importable=_importable(ctx), core_importable=importer.IMPORTABLE)
 
 
 @router.post("/import")
@@ -26,7 +50,8 @@ async def do_import(request: Request, ctx: Ctx = Depends(get_ctx)):
     ctx.require("import")
     form = await request.form()
     key = form.get("entity", "")
-    if key not in importer.IMPORTABLE:
+    importable = _importable(ctx)
+    if key not in importable:
         raise RecordError("Bitte einen Datensatztyp wählen.")
     commit = form.get("commit") == "1"
     if form.get("payload"):  # Bestätigung nach erfolgreichem Prüflauf
@@ -43,7 +68,9 @@ async def do_import(request: Request, ctx: Ctx = Depends(get_ctx)):
     rows = importer.read_table(filename, content)
     if not rows:
         raise RecordError("Die Datei enthält keine Datenzeilen.")
-    if key == "measurement":
+    if key.startswith("mod:"):
+        report = _module_handler(ctx, key)(ctx.db, ctx.actor, rows, commit)
+    elif key == "measurement":
         report = importer.import_measurements(ctx.db, ctx.actor, rows, commit)
     else:
         report = importer.import_entities(ctx.db, ctx.actor, key, rows, commit)
@@ -52,7 +79,7 @@ async def do_import(request: Request, ctx: Ctx = Depends(get_ctx)):
     if report.committed:
         ctx.flash("success", f"{report.created} Datensätze importiert.")
     payload = base64.b64encode(content).decode() if report.ok and not commit else None
-    return ctx.render("io/report.html", title=f"Import {importer.IMPORTABLE[key]}", report=report, key=key,
+    return ctx.render("io/report.html", title=f"Import {importable[key]}", report=report, key=key,
                       payload=payload, filename=filename, back="/import",
                       target_url=ENTITY_DEFS[key].url if key in ENTITY_DEFS else "/")
 

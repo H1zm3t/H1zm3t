@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge %}
+{% block title %}Beispielmodul{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Beispielmodul', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Beispielmodul</h1></div>
+<div class="card"><p>Diese Seite stammt aus <code>app/modules/beispielmodul/</code>. Letzte Versuche:</p>
+<ul class="link-list">{% for e in experiments %}<li><a href="/versuche/{{ e.id }}">{{ e.label }}</a> {{ badge(e.status) }}</li>{% endfor %}</ul></div>
+{% endblock %}

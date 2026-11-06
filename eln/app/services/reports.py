@@ -143,8 +143,9 @@ def _experiment_story(d: dict, st, story: list, heading_level: str = "title") ->
                         st["base"]))
         cols = ["Pos.", "Material-ID", "Materialnummer", "Material", "Charge", "Funktion", "Soll", "Ist", "Einheit",
                 "Gew.-%"]
-        widths = [10, 20, 22, 36, 20, 24, 14, 14, 10, 10]
-        story.append(_grid(cols, [[it.get(c) for c in cols] for it in r["Positionen"]], st,
+        heads = ["Pos", "Mat.-ID", "Mat.-Nr.", "Material", "Charge", "Funktion", "Soll", "Ist", "Einh.", "Gew.-%"]
+        widths = [9, 18, 17, 37, 25, 22, 14, 14, 10, 14]
+        story.append(_grid(heads, [[it.get(c) for c in cols] for it in r["Positionen"]], st,
                            [w * mm for w in widths]))
     else:
         story.append(_p("– keine Rezeptur zugeordnet –", st["small"]))

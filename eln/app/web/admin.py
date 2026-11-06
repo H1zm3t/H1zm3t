@@ -209,6 +209,29 @@ async def toggle_module(key: str, request: Request, ctx: Ctx = Depends(get_ctx))
     return ctx.redirect("/admin/module", "success", f"Modul »{module.name}« {'aktiviert' if enable else 'deaktiviert'}.")
 
 
+@router.post("/module/{key}/konfiguration")
+async def module_config(key: str, request: Request, ctx: Ctx = Depends(get_ctx)):
+    import json
+
+    ctx.require("manage_settings")
+    module = get_registry().get(key)
+    state = ctx.db.get(ModuleState, key)
+    if module is None or state is None:
+        raise HTTPException(404)
+    form = await request.form()
+    try:
+        new = json.loads(form.get("config") or "{}")
+        if not isinstance(new, dict):
+            raise ValueError
+    except ValueError:
+        return ctx.redirect("/admin/module", "error", "Ungültiges JSON – die Konfiguration muss ein Objekt {…} sein.")
+    old = state.config_json
+    state.config_json = json.dumps(new, ensure_ascii=False)
+    audit.log(ctx.db, ctx.actor, "settings", entity_type="module", entity_code=key, field="Modulkonfiguration",
+              old=old, new=state.config_json, reason=form.get("reason") or None)
+    return ctx.redirect("/admin/module", "success", f"Konfiguration von »{module.name}« gespeichert.")
+
+
 # --- Datensicherung -------------------------------------------------------------------
 
 @router.get("/sicherung")

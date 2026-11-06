@@ -226,8 +226,16 @@ def restore_backup(zip_path: Path, username: str = "system") -> dict:
             zf.extractall(tmp)
         tmp_root = Path(tmp)
         for suffix in ("-wal", "-shm"):
-            Path(str(db_path) + suffix).unlink(missing_ok=True)
-        shutil.copy2(tmp_root / "database" / "eln.db", db_path)
+            try:
+                Path(str(db_path) + suffix).unlink(missing_ok=True)
+            except OSError as exc:  # unter Windows: Datei noch von einem anderen Prozess geöffnet
+                raise BackupError("Die Datenbank wird noch verwendet. Bitte die Anwendung beenden (stop.bat) "
+                                  "und die Wiederherstellung mit restore.bat durchführen.") from exc
+        try:
+            shutil.copy2(tmp_root / "database" / "eln.db", db_path)
+        except OSError as exc:
+            raise BackupError("Die Datenbankdatei konnte nicht ersetzt werden (in Verwendung?). Bitte die Anwendung "
+                              "beenden und restore.bat verwenden. Der vorherige Stand ist gesichert.") from exc
         files_src = tmp_root / "files"
         old_files = settings.files_dir.with_name(settings.files_dir.name + "_alt_" + datetime.now().strftime("%Y%m%d%H%M%S"))
         if settings.files_dir.exists():

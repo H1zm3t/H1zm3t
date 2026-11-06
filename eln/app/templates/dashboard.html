@@ -28,7 +28,7 @@
   {% endif %}
   <div class="card"><h2 class="card-title">Meine Aufgaben</h2>
     {% if my_tasks %}<ul class="link-list">{% for t in my_tasks %}<li class="{% if t.is_overdue %}text-danger{% endif %}"><a href="/aufgaben/{{ t.id }}">{{ t.title }}</a> {{ badge(t.priority) if t.priority in ('hoch','dringend') }}<div class="muted small">{% if t.due_date %}fällig {{ t.due_date|de_date }}{% endif %}</div></li>{% endfor %}</ul>{% else %}{{ empty('Keine offenen Aufgaben.') }}{% endif %}
-    <a class="btn btn-sm" href="/aufgaben/neu">+ Aufgabe</a></div>
+    {% if user.has('create') %}<a class="btn btn-sm" href="/aufgaben/neu">+ Aufgabe</a>{% endif %}</div>
 </div>
 <div class="grid-2">
   <div class="card"><h2 class="card-title">Laufende Versuche</h2>

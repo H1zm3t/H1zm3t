@@ -15,6 +15,14 @@
     <input type="hidden" name="enabled" value="{{ '0' if m.key in enabled else '1' }}">
     <button class="btn btn-sm {% if m.key not in enabled %}btn-primary{% endif %}">{{ 'Deaktivieren' if m.key in enabled else 'Aktivieren' }}</button>
   </form>
+  {% if states.get(m.key) and (m.default_config() or states[m.key].config) %}
+  <details><summary class="small">Konfiguration (JSON)</summary>
+  <form method="post" action="/admin/module/{{ m.key }}/konfiguration" class="form">{{ csrf() }}
+    <textarea name="config" rows="8" class="mono">{{ states[m.key].config|tojson(indent=2) }}</textarea>
+    <input name="reason" placeholder="Änderungsgrund">
+    <div class="form-actions"><button class="btn btn-sm btn-primary">Konfiguration speichern</button></div>
+  </form></details>
+  {% endif %}
 </div>
 {% endfor %}
 </div>

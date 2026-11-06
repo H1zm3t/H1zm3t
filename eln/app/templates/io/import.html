@@ -13,13 +13,14 @@
   <div class="form-actions"><button class="btn btn-primary" type="submit">Prüfen</button></div>
 </form>
 <div class="card"><h2 class="card-title">Importvorlagen</h2>
-<table class="table table-compact"><tbody>{% for k, l in importable.items() %}<tr><td>{{ l }}</td><td><a href="/import/vorlage/{{ k }}.xlsx">Excel</a> · <a href="/import/vorlage/{{ k }}.csv">CSV</a></td></tr>{% endfor %}
+<table class="table table-compact"><tbody>{% for k, l in core_importable.items() %}<tr><td>{{ l }}</td><td><a href="/import/vorlage/{{ k }}.xlsx">Excel</a> · <a href="/import/vorlage/{{ k }}.csv">CSV</a></td></tr>{% endfor %}
 <tr><td>Rezepturpositionen</td><td><a href="/import/vorlage/recipe_items.xlsx">Excel</a> · <a href="/import/vorlage/recipe_items.csv">CSV</a> (Import auf der Rezepturseite)</td></tr></tbody></table>
 <ul class="muted small">
   <li>Spaltennamen: technischer Name (Vorlage) oder deutsche Bezeichnung.</li>
   <li>Verweise über Kennung: Material »M-00001« oder Materialnummer, Benutzer über Benutzernamen, Auftrag »A-2026-0001«.</li>
   <li>Zahlen mit Komma oder Punkt, Datum TT.MM.JJJJ oder JJJJ-MM-TT.</li>
   <li>Messdaten: eine Zeile je Messwert; Zeilen mit gleicher Bezeichnung, Messgröße, Probe und Versuch bilden einen Datensatz. Spalten »meta_…« werden als Metadaten gespeichert.</li>
+  <li>Module können eigene Importe bereitstellen (z. B. »Modul MVR / MFR: Einzelwerte« mit den Spalten sample, temperature_c, load_kg, value, melt_density).</li>
   <li>JSON: Liste von Objekten oder {"rows": [...]} – kompatibel mit dem JSON-Export.</li>
 </ul></div>
 </div>
