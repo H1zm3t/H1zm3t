@@ -240,9 +240,10 @@ def import_measurements(db: Session, actor: Actor, rows: list[dict], commit: boo
         g = groups.setdefault(key, {"name": name, "property": prop, "unit": r.get("unit"), "x_name": r.get("x_name"),
                                     "x_unit": r.get("x_unit"), "links": links, "measured_on": measured_on,
                                     "meta": {}, "values": []})
-        for k, v in r.items():
-            if k.startswith("meta_") and v not in (None, ""):
-                g["meta"][k[5:]] = v
+        for k, v in row.items():
+            key = str(k).strip()
+            if key.lower().startswith("meta_") and v not in (None, ""):
+                g["meta"][key[5:]] = v
         g["values"].append((x_value, value, r.get("label")))
     if report.errors or not commit:
         return report

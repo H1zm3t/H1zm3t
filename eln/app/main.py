@@ -68,7 +68,8 @@ def create_app(run_init: bool = True) -> FastAPI:
 
     @app.exception_handler(RecordError)
     async def _record_error(request: Request, exc: RecordError):
-        return _error_page(request, 400, "Aktion nicht möglich", str(exc))
+        status = getattr(exc, "status_code", 400)
+        return _error_page(request, status, "Keine Berechtigung" if status == 403 else "Aktion nicht möglich", str(exc))
 
     @app.exception_handler(StarletteHTTPException)
     async def _http(request: Request, exc: StarletteHTTPException):

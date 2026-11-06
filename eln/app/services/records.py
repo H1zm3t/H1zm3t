@@ -21,6 +21,14 @@ from .system_settings import get_setting
 class RecordError(Exception):
     """Fachlicher Fehler mit verständlicher Meldung."""
 
+    status_code = 400
+
+
+class RecordPermissionError(RecordError):
+    """Fehlendes Recht innerhalb eines fachlichen Ablaufs."""
+
+    status_code = 403
+
 
 EXPERIMENT_OPEN_STATES = ("Entwurf", "geplant", "in Bearbeitung", "pausiert")
 

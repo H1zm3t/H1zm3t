@@ -17,7 +17,7 @@ from ..db import utcnow
 from ..models import ApprovalRecord, Attachment, Experiment, Measurement, RecordSnapshot, Sample, User
 from . import audit
 from .audit import Actor
-from .records import RecordError
+from .records import RecordError, RecordPermissionError
 from .system_settings import get_setting
 
 LOCKED_STATES = {"zur Prüfung", "geprüft", "freigegeben", "archiviert", "abgebrochen"}
@@ -121,7 +121,7 @@ def _set(db: Session, actor: Actor, exp: Experiment, new_status: str, action: st
 
 def _require(user: User, permission: str, text: str) -> None:
     if not user.has(permission):
-        raise RecordError(f"Keine Berechtigung: {text}.")
+        raise RecordPermissionError(f"Keine Berechtigung: {text}.")
 
 
 def _independent(db: Session, user: User, exp: Experiment, step: str) -> None:
@@ -241,7 +241,7 @@ def perform(db: Session, actor: Actor, exp: Experiment, action: str, reason: str
         if exp.status != "geprüft":
             raise RecordError("Nur geprüfte Versuche können freigegeben werden.")
         if not (user.role_keys & {"leitung", "admin"}):
-            raise RecordError("Die zweite Freigabe ist der Abteilungsleitung vorbehalten.")
+            raise RecordPermissionError("Die zweite Freigabe ist der Abteilungsleitung vorbehalten.")
         _independent(db, user, exp, "Freigabe")
         exp.approved_at = now
         exp.approved_by_id = user.id
