@@ -1,0 +1,2 @@
+{% if ctx.records %}<table class="table table-compact"><tbody>{% for r in ctx.records %}<tr><td><a href="{{ ctx.module.base_url }}/{{ r.id }}">{{ r.code }}</a></td><td>{{ r.title }}</td><td>{{ r.created_at|de_date }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="empty">Noch keine Datensätze.</p>{% endif %}
+{% if user.has('create') and not ctx.experiment.locked %}<a class="btn btn-sm" href="{{ ctx.module.base_url }}/neu?experiment_id={{ ctx.experiment.id }}">+ {{ ctx.module.record_label }}</a>{% endif %}

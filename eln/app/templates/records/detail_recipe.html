@@ -1,0 +1,60 @@
+{% from "partials/macros.html" import badge, csrf, empty %}
+<div class="card">
+  <div class="card-head">
+    <h2 class="card-title">Positionen <span class="sum-indicator sum-{{ sum_check.level }}">Σ {{ sum_check.total|de_num(4) }} Gew.-%</span></h2>
+    <div class="actions">
+      {% if can_edit_items %}<a class="btn btn-primary btn-sm" href="/rezepturen/{{ obj.id }}/positionen">Positionen bearbeiten</a>{% endif %}
+      {% if user.has('create') %}
+      <button type="button" class="btn btn-sm" data-open-dialog="copy-dialog">Kopieren</button>
+      <button type="button" class="btn btn-sm" data-open-dialog="revision-dialog">Neue Revision</button>
+      {% endif %}
+      <a class="btn btn-sm" href="/rezepturen/vergleich?ids={{ obj.id }}">Vergleichen</a>
+      {% if user.has('export') %}<div class="dropdown"><button class="btn btn-sm" type="button" data-dropdown>Export</button><div class="dropdown-menu dropdown-right"><a href="/rezepturen/{{ obj.id }}/export.xlsx">Excel</a><a href="/rezepturen/{{ obj.id }}/export.csv">CSV</a></div></div>{% endif %}
+      {% if can_edit_items %}<button type="button" class="btn btn-sm" data-open-dialog="import-dialog">Import</button>{% endif %}
+    </div>
+  </div>
+  <div class="alert alert-{{ 'success' if sum_check.level == 'ok' else ('error' if sum_check.level == 'error' else 'warning') }}">{{ sum_check.message }}</div>
+  {% if obj.items %}
+  <div class="table-scroll"><table class="table">
+    <thead><tr><th>Pos.</th><th>Material-ID</th><th>Mat.-Nr.</th><th>Material</th><th>Handelsname</th><th>Lieferant</th><th>Charge</th><th>Funktion</th><th class="num">Soll</th><th class="num">Ist</th><th>Einheit</th><th class="num">Gew.-%</th><th class="num">Tol.</th><th>Bemerkung</th></tr></thead>
+    <tbody>{% for i in obj.items %}
+    {% set dev = (i.actual_amount is not none and i.target_amount and i.tolerance is not none and ((i.actual_amount - i.target_amount)|abs) > i.tolerance) %}
+    <tr class="{% if dev %}row-danger{% endif %}"><td>{{ i.position }}</td><td><a href="/materialien/{{ i.material.id }}">{{ i.material.code }}</a></td><td>{{ i.material.material_number or '' }}</td><td>{{ i.material.name }}</td><td>{{ i.material.trade_name or '' }}</td><td>{{ i.material.supplier or '' }}</td><td>{% if i.batch %}<a href="/chargen/{{ i.batch.id }}">{{ i.batch.batch_number }}</a>{% endif %}</td><td>{{ i.function or '' }}</td><td class="num">{{ i.target_amount|de_num }}</td><td class="num">{{ i.actual_amount|de_num }}{% if dev %} ⚠{% endif %}</td><td>{{ i.unit or '' }}</td><td class="num">{{ i.weight_percent|de_num }}</td><td class="num">{{ i.tolerance|de_num }}</td><td>{{ i.remark or '' }}</td></tr>
+    {% endfor %}</tbody>
+    <tfoot><tr><th colspan="11">Summe</th><th class="num">{{ obj.percent_sum|de_num }}</th><th colspan="2"></th></tr></tfoot>
+  </table></div>
+  {% else %}{{ empty('Noch keine Positionen. Über »Positionen bearbeiten« oder »Import« erfassen.') }}{% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Hoch- / Herunterskalieren</h2>
+  <form method="get" class="filter-bar">
+    <label>Gewünschte Gesamtmenge <input name="skalieren" value="{{ scale_total }}" inputmode="decimal" placeholder="z. B. 25" required></label>
+    <label>Einheit <select name="einheit">{% for u in ('g','kg','t') %}<option {% if u == scale_unit %}selected{% endif %}>{{ u }}</option>{% endfor %}</select></label>
+    <button class="btn" type="submit">Berechnen</button>
+  </form>
+  {% if scale_error %}<div class="alert alert-error">{{ scale_error }}</div>{% endif %}
+  {% if scale_rows %}
+  <table class="table table-compact"><thead><tr><th>Material</th><th class="num">Gew.-%</th><th class="num">Menge</th><th>Einheit</th></tr></thead><tbody>
+  {% for r in scale_rows %}<tr><td>{{ r.item.material.label }}</td><td class="num">{{ r.item.weight_percent|de_num }}</td><td class="num">{{ r.amount|de_num(4) }}</td><td>{{ r.unit }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% if user.has('create') %}
+  <form method="post" action="/rezepturen/{{ obj.id }}/kopie" class="inline">{{ csrf() }}<input type="hidden" name="mode" value="copy"><input type="hidden" name="scale_total" value="{{ scale_total }}"><input type="hidden" name="scale_unit" value="{{ scale_unit }}"><input type="hidden" name="reason" value="Skalierung auf {{ scale_total }} {{ scale_unit }}"><button class="btn btn-primary btn-sm" type="submit">Als neue Rezeptur (Kopie) speichern</button></form>
+  {% endif %}
+  {% endif %}
+</div>
+
+<dialog id="copy-dialog" class="dialog"><form method="post" action="/rezepturen/{{ obj.id }}/kopie">{{ csrf() }}<input type="hidden" name="mode" value="copy">
+  <h3>Rezeptur kopieren</h3><p>Es entsteht eine neue Rezeptur mit eigener ID (Status Entwurf, ohne Istmengen).</p>
+  <label class="field"><span>Bezeichnung der Kopie</span><input name="name" value="{{ obj.name }} (Kopie)"></label>
+  <label class="field"><span>Bemerkung</span><input name="reason"></label>
+  <div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-primary">Kopieren</button></div></form></dialog>
+<dialog id="revision-dialog" class="dialog"><form method="post" action="/rezepturen/{{ obj.id }}/kopie">{{ csrf() }}<input type="hidden" name="mode" value="revision">
+  <h3>Neue Revision</h3><p>Gleiche Rezeptur-ID {{ obj.code }}, Revision wird erhöht. Gültige Vorgängerrevisionen werden auf »ersetzt« gesetzt.</p>
+  <label class="field"><span>Änderungsgrund <em class="req">*</em></span><textarea name="reason" rows="3" required></textarea></label>
+  <div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-primary">Revision anlegen</button></div></form></dialog>
+<dialog id="import-dialog" class="dialog"><form method="post" action="/rezepturen/{{ obj.id }}/import" enctype="multipart/form-data">{{ csrf() }}
+  <h3>Positionen importieren</h3><p>CSV, Excel oder JSON. Die vorhandenen Positionen werden ersetzt. <a href="/import/vorlage/recipe_items.xlsx">Vorlage Excel</a> · <a href="/import/vorlage/recipe_items.csv">Vorlage CSV</a></p>
+  <label class="field"><span>Datei <em class="req">*</em></span><input type="file" name="file" accept=".csv,.xlsx,.json" required></label>
+  <label class="field"><span>Änderungsgrund</span><input name="reason" value="Import aus Datei"></label>
+  <div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-primary">Importieren</button></div></form></dialog>

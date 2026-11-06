@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf %}
+{% block title %}Validierungsbericht{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Import', '/import'), ('Bericht', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ title }}</h1></div>
+<div class="card">
+  <p>{{ report.total_rows }} Datenzeilen gelesen.</p>
+  {% if report.errors %}
+  <div class="alert alert-error">{{ report.errors|length }} Fehler gefunden – es wurde nichts gespeichert. Bitte Datei korrigieren und erneut importieren.</div>
+  <table class="table table-compact"><thead><tr><th>Zeile</th><th>Feld</th><th>Meldung</th></tr></thead><tbody>{% for z, f, m in report.errors %}<tr><td>{{ z }}</td><td>{{ f }}</td><td>{{ m }}</td></tr>{% endfor %}</tbody></table>
+  <a class="btn" href="{{ back }}">Zurück</a>
+  {% elif report.committed %}
+  <div class="alert alert-success">{{ report.created }} Datensätze importiert: {{ report.created_codes|join(', ') }}</div>
+  <a class="btn btn-primary" href="{{ target_url }}">Zur Liste</a>
+  {% else %}
+  <div class="alert alert-success">Prüfung erfolgreich – alle Zeilen sind gültig.</div>
+  <form method="post" action="/import">{{ csrf() }}<input type="hidden" name="entity" value="{{ key }}"><input type="hidden" name="commit" value="1"><input type="hidden" name="filename" value="{{ filename }}"><input type="hidden" name="payload" value="{{ payload }}">
+  <div class="form-actions"><a class="btn" href="/import">Abbrechen</a><button class="btn btn-primary" type="submit">Jetzt importieren</button></div></form>
+  {% endif %}
+</div>
+{% endblock %}

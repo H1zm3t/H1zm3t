@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf, badge %}
+{% block title %}Benutzer{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Benutzer', '/admin/benutzer'), (u.username if u else 'Neu', none)]) }}{% endblock %}
+{% block content %}
+{% set sel = selected if selected is defined else [] %}
+<div class="page-head"><h1>{% if u %}Benutzer {{ u.username }}{% else %}Neuer Benutzer{% endif %}</h1></div>
+{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+<div class="grid-2">
+<form method="post" class="card form">{{ csrf() }}
+  {% if not u %}<label class="field"><span>Benutzername <em class="req">*</em></span><input name="username" value="{{ form.get('username','') }}" required pattern="[A-Za-z0-9._\-]+"></label>{% endif %}
+  <label class="field"><span>Vollständiger Name <em class="req">*</em></span><input name="full_name" value="{{ u.full_name if u else form.get('full_name','') }}" required></label>
+  <label class="field"><span>Kürzel</span><input name="short_name" maxlength="10" value="{{ (u.short_name or '') if u else form.get('short_name','') }}"></label>
+  <label class="field"><span>E-Mail</span><input type="email" name="email" value="{{ (u.email or '') if u else form.get('email','') }}"></label>
+  <label class="field"><span>Abteilung</span><input name="department" value="{{ (u.department or '') if u else form.get('department','') }}"></label>
+  {% if not u %}<label class="field"><span>Startpasswort <em class="req">*</em></span><input type="password" name="password" required minlength="10" autocomplete="new-password"><small class="help">Muss bei der ersten Anmeldung geändert werden.</small></label>{% endif %}
+  <fieldset><legend>Rollen <em class="req">*</em></legend>{% for r in roles %}<label class="check"><input type="checkbox" name="roles" value="{{ r.key }}" {% if r.key in sel %}checked{% endif %}> {{ r.name }} <span class="muted small">– {{ r.description }}</span></label>{% endfor %}</fieldset>
+  {% if u %}
+  <label class="check"><input type="checkbox" name="is_active" value="1" {% if u.is_active %}checked{% endif %}> Konto aktiv</label>
+  {% if u.locked_until %}<label class="check"><input type="checkbox" name="unlock" value="1"> Sperre aufheben (gesperrt bis {{ u.locked_until|de_datetime }})</label>{% endif %}
+  <label class="field"><span>Änderungsgrund</span><input name="reason"></label>
+  {% endif %}
+  <div class="form-actions"><a class="btn" href="/admin/benutzer">Abbrechen</a><button class="btn btn-primary">Speichern</button></div>
+</form>
+{% if u %}
+<div>
+<form method="post" action="/admin/benutzer/{{ u.id }}/passwort" class="card form" data-confirm="Passwort zurücksetzen? Alle Sitzungen des Benutzers werden beendet.">{{ csrf() }}
+  <h2 class="card-title">Passwort zurücksetzen</h2>
+  <label class="field"><span>Neues Startpasswort</span><input type="password" name="password" required minlength="10" autocomplete="new-password"></label>
+  <div class="form-actions"><button class="btn">Zurücksetzen</button></div>
+</form>
+<div class="card"><h2 class="card-title">Letzte Sicherheitsereignisse</h2><table class="table table-compact"><tbody>{% for l in logins %}<tr><td>{{ l.timestamp|de_datetime }}</td><td>{{ l.action|action_label }}</td><td>{{ l.ip_address or '' }}</td><td>{{ badge(l.result) }}</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

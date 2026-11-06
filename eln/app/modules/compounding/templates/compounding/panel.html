@@ -1,0 +1,8 @@
+{% from "partials/macros.html" import badge %}
+{% if ctx.runs %}
+<table class="table table-compact"><thead><tr><th>Lauf</th><th>Extruder</th><th class="num">Durchsatz</th><th class="num">Drehzahl</th><th class="num">Drehmoment</th><th class="num">T Schmelze</th><th>Status</th></tr></thead><tbody>
+{% for r in ctx.runs %}<tr><td><a href="/module/compoundierung/{{ r.id }}">{{ r.code }}</a> {{ r.title }}</td><td>{{ r.device.name if r.device else '' }}</td><td class="num">{{ r.throughput_actual|de_num }} kg/h</td><td class="num">{{ r.screw_speed|de_num }}</td><td class="num">{{ r.torque|de_num }} %</td><td class="num">{{ r.melt_temperature|de_num }} °C</td><td>{{ badge(r.status) }}</td></tr>{% endfor %}
+</tbody></table>
+{% if ctx.runs|length > 1 %}<a class="btn btn-sm" href="/module/compoundierung/vergleich?{% for r in ctx.runs %}ids={{ r.id }}&{% endfor %}">Läufe vergleichen</a>{% endif %}
+{% else %}<p class="empty">Noch kein Compoundierlauf dokumentiert.</p>{% endif %}
+{% if user.has('create') and not ctx.experiment.locked %}<a class="btn btn-sm btn-primary" href="/module/compoundierung/neu?experiment_id={{ ctx.experiment.id }}">+ Compoundierlauf</a>{% endif %}

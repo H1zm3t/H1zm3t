@@ -1,0 +1,9 @@
+{% from "partials/macros.html" import badge, empty %}
+<div class="card"><h2 class="card-title">Verknüpfte Versuche ({{ experiments|length }})</h2>
+{% if experiments %}<table class="table"><thead><tr><th>ID</th><th>Rev.</th><th>Bezeichnung</th><th>Fachbereich</th><th>Verantwortlich</th><th>Geplant</th><th>Status</th></tr></thead><tbody>
+{% for e in experiments %}<tr><td><a href="/versuche/{{ e.id }}">{{ e.code }}</a></td><td>{{ e.revision }}</td><td>{{ e.title }}</td><td>{{ e.department or '' }}</td><td>{{ e.responsible.full_name if e.responsible else '' }}</td><td>{{ e.planned_date|de_date }}</td><td>{{ badge(e.status) }}</td></tr>{% endfor %}
+</tbody></table>{% else %}{{ empty('Noch keine Versuche.') }}{% endif %}</div>
+<div class="grid-2">
+<div class="card"><h2 class="card-title">Versuchsreihen</h2>{% if series %}<ul class="link-list">{% for s in series %}<li><a href="/versuchsreihen/{{ s.id }}">{{ s.label }}</a> {{ badge(s.status) }}</li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>
+<div class="card"><h2 class="card-title">Proben</h2>{% if samples %}<ul class="link-list">{% for s in samples %}<li><a href="/proben/{{ s.id }}">{{ s.code }}</a> {{ s.name }} {{ badge(s.status) }}</li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>
+</div>

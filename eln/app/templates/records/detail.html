@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge, csrf, reason_dialog %}
+{% block title %}{{ obj.code }}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([(d.plural, d.url), (obj.code, none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">{{ d.label }} · {{ obj.code }}{% if obj.revision is defined and d.key in ('experiment','recipe') %} · Rev. {{ obj.revision }}{% endif %} · Version {{ obj.version }}</div>
+    <h1>{{ obj[d.title_attr] or obj.code }} {% if d.status_field %}{{ badge(obj[d.status_field]) }}{% endif %}{% if obj.locked %} <span class="badge badge-neutral" title="Gesperrt – Änderungen nur über neue Revision">🔒 gesperrt</span>{% endif %}{% if obj.confidentiality is defined and obj.confidentiality in ('vertraulich','streng vertraulich') %} {{ badge(obj.confidentiality) }}{% endif %}</h1>
+    <p class="muted small">Angelegt {{ obj.created_at|de_datetime }}{% if obj.updated_at %} · zuletzt geändert {{ obj.updated_at|de_datetime }}{% endif %}</p>
+  </div>
+  <div class="actions">
+    {% if can_edit and not obj.locked and not (d.key == 'recipe' and obj.status in ('ersetzt','archiviert')) %}<a class="btn" href="{{ d.url }}/{{ obj.id }}/bearbeiten">Bearbeiten</a>{% endif %}
+    {% if status_targets and can_edit %}
+    <div class="dropdown"><button class="btn" type="button" data-dropdown>Status ändern</button>
+      <div class="dropdown-menu dropdown-right">{% for s in status_targets %}<button type="button" class="dropdown-btn" data-open-dialog="status-dialog" data-set-field="status" data-set-value="{{ s }}">{{ s }}</button>{% endfor %}</div></div>
+    {% endif %}
+    {% block extra_actions %}{% endblock %}
+  </div>
+</div>
+{% if status_targets %}
+<dialog id="status-dialog" class="dialog"><form method="post" action="{{ d.url }}/{{ obj.id }}/status">{{ csrf() }}
+  <h3>Status ändern</h3><input type="hidden" name="status" data-field="status">
+  <p>Neuer Status: <strong data-show="status"></strong></p>
+  <label class="field"><span>Begründung</span><textarea name="reason" rows="3" placeholder="Bei Archivierung und bei nicht mehr offenen Datensätzen verpflichtend"></textarea></label>
+  <div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-primary" type="submit">Übernehmen</button></div>
+</form></dialog>
+{% endif %}
+
+{% if detail_template %}{% include detail_template %}{% endif %}
+
+{% set groups = {} %}
+{% for f in fields %}{% set _ = groups.setdefault(f.group, []).append(f) %}{% endfor %}
+<div class="card">
+{% for group, items in groups.items() %}
+  <h2 class="card-title">{{ group }}</h2>
+  <dl class="kv-grid">
+  {% for f in items %}
+    <div class="kv {% if f.kind == 'textarea' %}kv-full{% endif %}"><dt>{{ f.spec.label }}{% if f.spec.unit %} [{{ f.spec.unit }}]{% endif %}</dt>
+    <dd class="{% if f.kind == 'textarea' %}pre{% endif %}">
+      {%- if f.kind == 'multi_ref' %}{% for it in f['items'] %}{% if it.url %}<a href="{{ it.url }}" class="chip">{{ it.text }}</a>{% else %}<span class="chip">{{ it.text }}</span>{% endif %}{% else %}–{% endfor %}
+      {%- elif f.kind == 'ref' and f.url %}<a href="{{ f.url }}">{{ f.text }}</a>
+      {%- elif f.spec.kind == 'select' and f.spec.name in ('status','priority','confidentiality') %}{{ badge(f.text) }}
+      {%- elif f.spec.kind == 'tags' and f.text %}{% for t in f.text.split(',') %}<span class="chip">{{ t.strip() }}</span>{% endfor %}
+      {%- else %}{{ f.text if f.text not in (none, '') else '–' }}{% endif -%}
+    </dd></div>
+  {% endfor %}
+  </dl>
+{% endfor %}
+</div>
+{% block after_fields %}{% if detail_after %}{% include detail_after %}{% endif %}{% endblock %}
+<div class="card">{% include "partials/panels.html" %}</div>
+{% endblock %}

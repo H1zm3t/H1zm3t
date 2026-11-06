@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge %}
+{% block title %}{{ rec.code }}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([(module.name, module.base_url), (rec.code, none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">{{ module.name }} · {{ rec.code }} · Version {{ rec.version }}</div><h1>{{ rec.title }}</h1></div>
+{% if user.has('edit') and not (rec.experiment and rec.experiment.locked) %}<a class="btn" href="{{ module.base_url }}/{{ rec.id }}/bearbeiten">Bearbeiten</a>{% endif %}</div>
+<div class="card"><dl class="kv-grid">
+<div class="kv"><dt>Versuch</dt><dd>{% if rec.experiment %}<a href="/versuche/{{ rec.experiment.id }}">{{ rec.experiment.label }}</a>{% else %}–{% endif %}</dd></div>
+<div class="kv"><dt>Probe</dt><dd>{% if rec.sample %}<a href="/proben/{{ rec.sample.id }}">{{ rec.sample.label }}</a>{% else %}–{% endif %}</dd></div>
+<div class="kv"><dt>Gerät</dt><dd>{% if rec.device %}<a href="/geraete/{{ rec.device.id }}">{{ rec.device.label }}</a>{% else %}–{% endif %}</dd></div>
+{% for s, v in rows %}<div class="kv {% if s.kind == 'textarea' %}kv-full{% endif %}"><dt>{{ s.label }}{% if s.unit %} [{{ s.unit }}]{% endif %}</dt><dd class="pre">{{ v or '–' }}</dd></div>{% endfor %}
+</dl></div>
+<div class="card">{% include "partials/panels.html" %}</div>
+{% endblock %}

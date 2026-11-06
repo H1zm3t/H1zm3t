@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import badge, empty %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Guten Tag, {{ user.full_name.split(' ')[0] }}</h1><p class="muted">{{ today()|de_date }} · {{ company_name }}</p></div>
+  <div class="actions">{% if user.has('create') %}<a class="btn btn-primary" href="/auftraege/neu">+ Auftrag</a><a class="btn btn-primary" href="/versuche/neu">+ Versuch</a>{% endif %}</div>
+</div>
+<div class="kpis">
+  <a class="kpi" href="/auftraege"><span>Offene Aufträge</span><strong>{{ open_orders_count }}</strong></a>
+  <a class="kpi" href="/versuche?status=in%20Bearbeitung"><span>Laufende Versuche</span><strong>{{ running_count }}</strong></a>
+  <a class="kpi" href="/versuche"><span>Offene Versuche gesamt</span><strong>{{ open_total }}</strong></a>
+  <a class="kpi {% if to_review %}kpi-warn{% endif %}" href="/versuche?status=zur%20Pr%C3%BCfung"><span>Zur Prüfung</span><strong>{{ to_review|length }}</strong></a>
+  <a class="kpi {% if to_approve %}kpi-warn{% endif %}" href="/versuche?status=gepr%C3%BCft"><span>Freigabe ausstehend</span><strong>{{ to_approve|length }}</strong></a>
+  <a class="kpi {% if overdue_tasks %}kpi-danger{% endif %}" href="/aufgaben?offen=1"><span>Überfällige Aufgaben</span><strong>{{ overdue_tasks|length }}</strong></a>
+</div>
+{% if corrections %}<div class="alert alert-error">Korrektur erforderlich: {% for e in corrections %}<a href="/versuche/{{ e.id }}">{{ e.code }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+{% if device_alerts %}<div class="alert alert-warning"><strong>Geräte mit Handlungsbedarf:</strong>
+{% for d in device_alerts %}<a href="/geraete/{{ d.id }}">{{ d.name }}</a> ({% if d.status == 'gesperrt' %}gesperrt{% endif %}{% if d.next_calibration and d.next_calibration <= alert_limit %}{% if d.status == 'gesperrt' %}, {% endif %}Kalibrierung {{ d.next_calibration|de_date }}{% endif %}{% if d.next_maintenance and d.next_maintenance <= alert_limit %}{% if d.status == 'gesperrt' or (d.next_calibration and d.next_calibration <= alert_limit) %}, {% endif %}Wartung {{ d.next_maintenance|de_date }}{% endif %}){% if not loop.last %} · {% endif %}{% endfor %}</div>{% endif %}
+<div class="grid-3">
+  {% if show_review %}
+  <div class="card"><h2 class="card-title">Zur Prüfung</h2>
+    {% if to_review %}<ul class="link-list">{% for e in to_review %}<li><a href="/versuche/{{ e.id }}">{{ e.code }}</a> {{ e.title }}<div class="muted small">eingereicht {{ e.submitted_at|de_datetime }}{% if e.responsible %} · {{ e.responsible.full_name }}{% endif %}</div></li>{% endfor %}</ul>{% else %}{{ empty('Nichts zu prüfen.') }}{% endif %}</div>
+  {% endif %}
+  {% if show_approve %}
+  <div class="card"><h2 class="card-title">Freizugeben</h2>
+    {% if to_approve %}<ul class="link-list">{% for e in to_approve %}<li><a href="/versuche/{{ e.id }}">{{ e.code }}</a> {{ e.title }}<div class="muted small">geprüft {{ e.reviewed_at|de_datetime }}</div></li>{% endfor %}</ul>{% else %}{{ empty('Keine Freigaben ausstehend.') }}{% endif %}</div>
+  {% endif %}
+  <div class="card"><h2 class="card-title">Meine Aufgaben</h2>
+    {% if my_tasks %}<ul class="link-list">{% for t in my_tasks %}<li class="{% if t.is_overdue %}text-danger{% endif %}"><a href="/aufgaben/{{ t.id }}">{{ t.title }}</a> {{ badge(t.priority) if t.priority in ('hoch','dringend') }}<div class="muted small">{% if t.due_date %}fällig {{ t.due_date|de_date }}{% endif %}</div></li>{% endfor %}</ul>{% else %}{{ empty('Keine offenen Aufgaben.') }}{% endif %}
+    <a class="btn btn-sm" href="/aufgaben/neu">+ Aufgabe</a></div>
+</div>
+<div class="grid-2">
+  <div class="card"><h2 class="card-title">Laufende Versuche</h2>
+    {% if running %}<table class="table table-compact"><tbody>{% for e in running %}<tr><td><a href="/versuche/{{ e.id }}">{{ e.code }}</a></td><td>{{ e.title }}</td><td>{{ e.responsible.full_name if e.responsible else '' }}</td><td>{{ badge(e.status) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
+  <div class="card"><h2 class="card-title">Offene Aufträge</h2>
+    {% if orders %}<table class="table table-compact"><tbody>{% for o in orders %}<tr class="{% if o.due_date and o.due_date < today() %}row-danger{% endif %}"><td><a href="/auftraege/{{ o.id }}">{{ o.code }}</a></td><td>{{ o.title }}</td><td>{{ o.client or '' }}</td><td>{{ o.due_date|de_date }}</td><td>{{ badge(o.priority) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
+</div>
+<div class="grid-3">
+  <div class="card"><h2 class="card-title">Versuche nach Status</h2><div class="chart-box"><canvas data-chart="dash-status"></canvas></div></div>
+  <div class="card"><h2 class="card-title">Versuche nach Fachbereich</h2><div class="chart-box"><canvas data-chart="dash-departments"></canvas></div></div>
+  <div class="card"><h2 class="card-title">Neue Versuche je Monat</h2><div class="chart-box"><canvas data-chart="dash-monthly"></canvas></div></div>
+</div>
+<script type="application/json" data-dashboard-charts>{{ charts_json|safe }}</script>
+<div class="card"><h2 class="card-title">Zuletzt bearbeitet</h2>
+{% if recent %}<table class="table table-compact"><tbody>{% for r in recent %}<tr><td>{{ r.type }}</td><td><a href="{{ r.url }}">{{ r.code }}</a></td><td>{{ r.action|action_label }}</td><td>{{ r.user }}</td><td>{{ r.time|de_datetime }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
+{% endblock %}

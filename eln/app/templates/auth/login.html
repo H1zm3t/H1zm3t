@@ -1,0 +1,16 @@
+{% extends "base_public.html" %}
+{% block title %}Anmeldung{% endblock %}
+{% block content %}
+<div class="card public-card login-card">
+  <div class="login-brand"><span class="brand-mark">ELN</span><div><strong>{{ APP_NAME }}</strong><br><small>Elektronisches Laborbuch</small></div></div>
+  {% if request.query_params.get('wiederhergestellt') %}<div class="alert alert-success">Die Wiederherstellung wurde abgeschlossen. Bitte melden Sie sich erneut an.</div>{% endif %}
+  {% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/login" class="form">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="field"><span>Benutzername</span><input name="username" value="{{ username }}" autocomplete="username" required autofocus></label>
+    <label class="field"><span>Passwort</span><input name="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+  </form>
+  <p class="muted small">Nach mehreren Fehlversuchen wird das Konto vorübergehend gesperrt. Alle Anmeldungen werden protokolliert.</p>
+</div>
+{% endblock %}

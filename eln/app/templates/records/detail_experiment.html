@@ -1,0 +1,44 @@
+{% from "partials/macros.html" import badge, csrf %}
+{% set steps = ['Entwurf','in Bearbeitung','abgeschlossen','zur Prüfung','geprüft','freigegeben'] %}
+{% set idx = steps.index(obj.status) if obj.status in steps else (1 if obj.status in ('geplant','pausiert','Korrektur erforderlich') else -1) %}
+<div class="card workflow">
+  <ol class="stepper">
+    {% for s in steps %}<li class="{% if loop.index0 < idx %}done{% elif loop.index0 == idx %}current{% endif %}">{{ s }}</li>{% endfor %}
+  </ol>
+  {% if obj.status == 'Korrektur erforderlich' %}<div class="alert alert-error">Der Versuch wurde zur Korrektur zurückgewiesen. Begründung siehe Historie → Prüfungen und Freigaben.</div>{% endif %}
+  {% if obj.locked %}<div class="alert alert-info">Dieser Versuchsstand ist gesperrt (»{{ obj.status }}«). {% if obj.status == 'freigegeben' %}Änderungen sind nur über eine neue Revision mit Änderungsgrund möglich.{% endif %}</div>{% endif %}
+  {% for w in device_warnings %}<div class="alert alert-warning">⚠ {{ w }}</div>{% endfor %}
+  {% if recipe_check and not recipe_check.ok %}<div class="alert alert-warning">Rezeptur {{ obj.recipe.code }}: {{ recipe_check.message }}</div>{% endif %}
+  <div class="workflow-actions">
+    {% for a in workflow_actions %}
+      {% if a.needs_reason %}
+      <button type="button" class="btn btn-{{ a.style }}" data-open-dialog="wf-{{ loop.index }}">{{ a.label }}</button>
+      <dialog id="wf-{{ loop.index }}" class="dialog"><form method="post" action="/versuche/{{ obj.id }}/workflow">{{ csrf() }}
+        <input type="hidden" name="action" value="{{ a.key }}"><h3>{{ a.label }}</h3>
+        {% if a.confirm %}<p>{{ a.confirm }}</p>{% endif %}
+        <label class="field"><span>Begründung <em class="req">*</em></span><textarea name="reason" rows="3" required></textarea></label>
+        <div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-{{ a.style }}" type="submit">{{ a.label }}</button></div>
+      </form></dialog>
+      {% else %}
+      <form method="post" action="/versuche/{{ obj.id }}/workflow" class="inline" {% if a.confirm %}data-confirm="{{ a.confirm }}"{% endif %}>{{ csrf() }}
+        <input type="hidden" name="action" value="{{ a.key }}"><button class="btn btn-{{ a.style }}" type="submit">{{ a.label }}</button></form>
+      {% endif %}
+    {% endfor %}
+    <span class="spacer"></span>
+    {% if user.has('export') %}
+    <div class="dropdown"><button class="btn" type="button" data-dropdown>Dossier / Bericht</button>
+      <div class="dropdown-menu dropdown-right">
+        <a href="/versuche/{{ obj.id }}/dossier.pdf" target="_blank" rel="noopener">PDF-Bericht</a>
+        <a href="/versuche/{{ obj.id }}/dossier.xlsx">Excel</a>
+        <a href="/versuche/{{ obj.id }}/dossier.json">JSON</a>
+        <a href="/versuche/{{ obj.id }}/dossier.zip">Komplettexport (ZIP inkl. Anhänge)</a>
+      </div></div>
+    {% endif %}
+    {% if user.has('create') %}<form method="post" action="/versuche/{{ obj.id }}/kopieren" class="inline" data-confirm="Neuen Versuch als Kopie anlegen (Planung ohne Ergebnisse)?">{{ csrf() }}<button class="btn" type="submit">Kopieren</button></form>{% endif %}
+  </div>
+  <dl class="kv-inline">
+    {% if obj.submitted_at %}<div><dt>Eingereicht</dt><dd>{{ obj.submitted_at|de_datetime }} · {{ obj.submitted_by.full_name if obj.submitted_by }}</dd></div>{% endif %}
+    {% if obj.reviewed_at %}<div><dt>Geprüft</dt><dd>{{ obj.reviewed_at|de_datetime }} · {{ obj.reviewed_by.full_name if obj.reviewed_by }}</dd></div>{% endif %}
+    {% if obj.approved_at %}<div><dt>Freigegeben</dt><dd>{{ obj.approved_at|de_datetime }} · {{ obj.approved_by.full_name if obj.approved_by }}</dd></div>{% endif %}
+  </dl>
+</div>

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Passwort ändern{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Passwort ändern</h1></div>
+{% if forced %}<div class="alert alert-warning">Bitte vergeben Sie ein neues, persönliches Passwort, bevor Sie fortfahren.</div>{% endif %}
+{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+<div class="card narrow">
+<form method="post" action="/konto" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label class="field"><span>Bisheriges Passwort <em class="req">*</em></span><input type="password" name="old_password" required autocomplete="current-password"></label>
+  <label class="field"><span>Neues Passwort <em class="req">*</em></span><input type="password" name="new_password" required minlength="10" autocomplete="new-password"><small class="help">Mindestens 10 Zeichen, Buchstaben und Ziffern/Sonderzeichen.</small></label>
+  <label class="field"><span>Neues Passwort wiederholen <em class="req">*</em></span><input type="password" name="new_password2" required minlength="10" autocomplete="new-password"></label>
+  <div class="form-actions"><button class="btn btn-primary" type="submit">Speichern</button></div>
+</form>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf %}
+{% block title %}Rollen{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Benutzer', '/admin/benutzer'), ('Rollen & Rechte', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Rollen &amp; Rechte</h1></div>
+<form method="post" class="card form">{{ csrf() }}
+<div class="table-scroll"><table class="table matrix"><thead><tr><th>Recht</th>{% for r in roles %}<th>{{ r.name }}</th>{% endfor %}</tr></thead><tbody>
+{% for p, label in permissions.items() %}<tr><td>{{ label }}</td>{% for r in roles %}<td class="center"><input type="checkbox" name="{{ r.key }}:{{ p }}" value="1" {% if r.key == 'admin' or p in r.permissions %}checked{% endif %} {% if r.key == 'admin' %}disabled title="Administratoren haben immer alle Rechte"{% endif %}></td>{% endfor %}</tr>{% endfor %}
+</tbody></table></div>
+<label class="field"><span>Änderungsgrund</span><input name="reason"></label>
+<p class="muted small">Ein Benutzer kann mehrere Rollen besitzen; es gilt die Vereinigung aller Rechte. Wiederherstellung von Sicherungen ist zusätzlich an die Rolle Administrator gebunden; die zweite Freigabe an die Rolle Abteilungsleitung.</p>
+<div class="form-actions"><button class="btn btn-primary">Speichern</button></div></form>
+{% endblock %}

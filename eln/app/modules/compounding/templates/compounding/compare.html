@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs %}
+{% block title %}Vergleich Compoundierläufe{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Compoundierung', '/module/compoundierung'), ('Vergleich', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Compoundierläufe vergleichen</h1></div>
+<form method="get" class="card form"><label class="field"><span>Läufe (mind. zwei)</span><select name="ids" multiple size="8" data-multi>{% for r in all_runs %}<option value="{{ r.id }}" {% if r.id in ids %}selected{% endif %}>{{ r.code }} – {{ r.title }} ({{ r.experiment.code }})</option>{% endfor %}</select></label>
+<div class="form-actions"><button class="btn btn-primary">Vergleichen</button></div></form>
+{% if result %}
+<script type="application/json" data-compare-chart>{{ chart_json|safe }}</script>
+<div class="grid-2">
+<div class="card"><h2 class="card-title">Temperaturprofile (Soll)</h2><div class="chart-box"><canvas data-chart="compare-zones"></canvas></div></div>
+<div class="card"><h2 class="card-title">Prozessparameter</h2><div class="chart-box"><canvas data-chart="compare-params"></canvas></div></div>
+</div>
+<div class="card"><div class="table-scroll"><table class="table compare"><thead><tr><th>Parameter</th>{% for r in result.runs %}<th class="num"><a href="/module/compoundierung/{{ r.id }}">{{ r.code }}</a><div class="muted small">{{ r.recipe.code ~ ' Rev. ' ~ r.recipe.revision if r.recipe else '' }}</div></th>{% endfor %}</tr></thead><tbody>
+{% for p in result.params %}<tr class="{% if p.differs %}row-diff{% endif %}"><td>{{ p.label }} [{{ p.unit }}]</td>{% for v in p['values'] %}<td class="num">{{ v|de_num if v is not none else '–' }}</td>{% endfor %}</tr>{% endfor %}
+<tr><th colspan="{{ result.runs|length + 1 }}">Zylindertemperaturen Soll / Ist [°C]</th></tr>
+{% for z in result.zone_rows %}<tr class="{% if z.differs %}row-diff{% endif %}"><td>{{ z.name }}</td>{% for s, a in z['values'] %}<td class="num">{{ s|de_num if s is not none else '–' }} / {{ a|de_num if a is not none else '–' }}</td>{% endfor %}</tr>{% endfor %}
+</tbody></table></div><p class="muted small">Hervorgehobene Zeilen: Werte unterscheiden sich zwischen den Läufen.</p></div>
+{% endif %}
+{% endblock %}

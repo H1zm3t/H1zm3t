@@ -1,0 +1,18 @@
+<fieldset>
+  <legend>Prozessparameter (allgemein)</legend>
+  <p class="help">Beliebige Parameter mit Einheit. Für Compoundierversuche steht zusätzlich das Fachmodul »Compoundierung« zur Verfügung.</p>
+  {% if errors.get('process_parameters') %}<div class="error-msg">{{ errors['process_parameters'] }}</div>{% endif %}
+  {% set params = (extra_raw.process_parameters if extra_raw is defined and extra_raw and extra_raw.process_parameters is defined else process_parameters) %}
+  <table class="table table-edit" data-rows="param">
+    <thead><tr><th>Parameter</th><th>Wert</th><th>Einheit</th><th></th></tr></thead>
+    <tbody>
+    {% for p in params %}
+    <tr data-row><td><input name="param-{{ loop.index0 }}-name" value="{{ p.name }}"></td><td><input name="param-{{ loop.index0 }}-value" value="{{ p.value }}"></td><td><input name="param-{{ loop.index0 }}-unit" value="{{ p.unit }}" class="w-unit"></td><td><button type="button" class="icon-btn" data-remove-row title="Zeile entfernen">✕</button></td></tr>
+    {% endfor %}
+    </tbody>
+    <template><tr data-row><td><input name="param-__i__-name"></td><td><input name="param-__i__-value"></td><td><input name="param-__i__-unit" class="w-unit"></td><td><button type="button" class="icon-btn" data-remove-row title="Zeile entfernen">✕</button></td></tr></template>
+  </table>
+  <button type="button" class="btn btn-sm" data-add-row="param">+ Parameter</button>
+</fieldset>
+<script type="application/json" id="device-warnings">{{ device_warnings_json|safe }}</script>
+<div class="alert alert-warning" hidden data-device-warning-box></div>

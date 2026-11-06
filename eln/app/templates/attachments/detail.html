@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge, csrf %}
+{% block title %}{{ att.original_filename }}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([((att.entity_type|type_label) ~ ' ' ~ (parent.code if parent else ''), parent_url), ('Anhang', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">Anhang · Version {{ att.version }}</div><h1>{{ att.original_filename }} {{ badge(att.status) }}</h1></div>
+<div class="actions">{% if att.is_image or att.is_pdf %}<a class="btn" href="/anhaenge/{{ att.id }}/vorschau" target="_blank" rel="noopener">Vorschau</a>{% endif %}<a class="btn btn-primary" href="/anhaenge/{{ att.id }}/download">Download</a><a class="btn" href="/anhaenge/{{ att.id }}/pruefen">Prüfsumme prüfen</a></div></div>
+{% if newer %}<div class="alert alert-info">Es gibt eine neuere Version: <a href="/anhaenge/{{ newer.id }}">Version {{ newer.version }}</a></div>{% endif %}
+{% if att.status_reason %}<div class="alert alert-warning">Status »{{ att.status }}« seit {{ att.status_changed_at|de_datetime }}: {{ att.status_reason }}</div>{% endif %}
+{% if duplicates %}<div class="alert alert-info">Inhaltsgleiche Dateien (gleiche SHA-256): {% for d in duplicates %}<a href="/anhaenge/{{ d.id }}">{{ d.original_filename }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+<div class="grid-2">
+<div class="card"><h2 class="card-title">Metadaten</h2><dl class="kv-grid">
+  <div class="kv"><dt>Datei-ID</dt><dd><code>{{ att.file_uid }}</code></dd></div>
+  <div class="kv"><dt>Interner Name</dt><dd><code>{{ att.stored_filename }}</code></dd></div>
+  <div class="kv"><dt>Speicherpfad</dt><dd><code>{{ att.storage_path }}</code></dd></div>
+  <div class="kv"><dt>Typ / MIME</dt><dd>{{ att.file_type }} · {{ att.mime_type }}</dd></div>
+  <div class="kv"><dt>Größe</dt><dd>{{ att.size_bytes|filesize }} ({{ att.size_bytes }} Bytes)</dd></div>
+  <div class="kv kv-full"><dt>SHA-256</dt><dd><code>{{ att.sha256 }}</code></dd></div>
+  <div class="kv"><dt>Hochgeladen</dt><dd>{{ att.created_at|de_datetime }} · {{ att.created_by.full_name if att.created_by else '' }}</dd></div>
+  <div class="kv"><dt>Vertraulichkeit</dt><dd>{{ badge(att.confidentiality) }}</dd></div>
+  <div class="kv"><dt>Kategorie</dt><dd>{{ att.category or '–' }}</dd></div>
+  <div class="kv"><dt>Bildunterschrift</dt><dd>{{ att.caption or '–' }}</dd></div>
+  <div class="kv kv-full"><dt>Beschreibung</dt><dd>{{ att.description or '–' }}</dd></div>
+  <div class="kv kv-full"><dt>Volltext</dt><dd>{% if att.extracted_text %}{{ att.extracted_text|length }} Zeichen indexiert{% else %}kein Text extrahiert{% endif %}</dd></div>
+</dl></div>
+<div class="card">
+  {% if att.is_image %}<img class="preview-img" src="/anhaenge/{{ att.id }}/vorschau" alt="{{ att.caption or att.original_filename }}">{% elif att.is_pdf %}<iframe class="preview-pdf" src="/anhaenge/{{ att.id }}/vorschau" title="PDF-Vorschau"></iframe>{% else %}<p class="muted">Keine Vorschau für diesen Dateityp.</p>{% endif %}
+</div></div>
+{% if not locked and att.status == 'aktiv' %}
+<div class="grid-2">
+{% if user.has('edit') %}
+<div class="card"><h2 class="card-title">Angaben ändern</h2><form method="post" action="/anhaenge/{{ att.id }}/meta" class="form">{{ csrf() }}
+  <label class="field"><span>Kategorie</span><select name="category"><option value="">–</option>{% for c in categories %}<option {% if c == att.category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
+  <label class="field"><span>Vertraulichkeit</span><select name="confidentiality">{% for c in levels %}<option {% if c == att.confidentiality %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
+  <label class="field"><span>Bildunterschrift</span><input name="caption" value="{{ att.caption or '' }}"></label>
+  <label class="field"><span>Beschreibung</span><textarea name="description" rows="2">{{ att.description or '' }}</textarea></label>
+  <label class="field"><span>Änderungsgrund</span><input name="reason"></label>
+  <div class="form-actions"><button class="btn btn-primary">Speichern</button></div></form></div>
+<div class="card"><h2 class="card-title">Neue Version hochladen</h2><p class="muted">Die bisherige Version bleibt unverändert erhalten (Status »ersetzt«).</p>
+  <form method="post" action="/anhaenge/{{ att.id }}/neue-version" enctype="multipart/form-data" class="form">{{ csrf() }}
+  <label class="field"><span>Datei <em class="req">*</em></span><input type="file" name="file" required></label>
+  <label class="field"><span>Grund <em class="req">*</em></span><input name="reason" required></label>
+  <div class="form-actions"><button class="btn btn-primary">Neue Version speichern</button></div></form></div>
+{% endif %}
+</div>
+{% endif %}
+{% if att.status in ('aktiv','ersetzt') %}
+<div class="card"><h2 class="card-title">Archivieren / ungültig setzen</h2>
+<div class="actions">
+  {% if user.has('archive') %}<button class="btn" type="button" data-open-dialog="st-dialog" data-set-field="status" data-set-value="archiviert">Archivieren</button>{% endif %}
+  {% if user.has('delete_files') %}<button class="btn btn-danger" type="button" data-open-dialog="st-dialog" data-set-field="status" data-set-value="ungültig">Ungültig setzen</button>{% endif %}
+  {% if can_delete %}<button class="btn btn-danger" type="button" data-open-dialog="del-dialog">Endgültig löschen</button>{% endif %}
+</div>
+<p class="muted small">Dateien eingereichter oder freigegebener Stände können nicht gelöscht werden – nur archiviert oder ungültig gesetzt. Jede Aktion wird protokolliert.</p>
+</div>
+<dialog id="st-dialog" class="dialog"><form method="post" action="/anhaenge/{{ att.id }}/status">{{ csrf() }}<input type="hidden" name="status" data-field="status"><h3>Status: <span data-show="status"></span></h3>
+<label class="field"><span>Begründung <em class="req">*</em></span><textarea name="reason" required rows="3"></textarea></label>
+<div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-primary">Übernehmen</button></div></form></dialog>
+<dialog id="del-dialog" class="dialog"><form method="post" action="/anhaenge/{{ att.id }}/loeschen">{{ csrf() }}<h3>Datei endgültig löschen?</h3><p>Die Datei wird aus der Ablage entfernt. Der Vorgang wird mit Prüfsumme im Audit Trail dokumentiert.</p>
+<label class="field"><span>Begründung <em class="req">*</em></span><textarea name="reason" required rows="3"></textarea></label>
+<div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-danger">Löschen</button></div></form></dialog>
+{% endif %}
+<div class="card"><h2 class="card-title">Versionen</h2><table class="table table-compact"><tbody>{% for v in chain %}<tr class="{% if v.id == att.id %}row-active{% endif %}"><td><a href="/anhaenge/{{ v.id }}">Version {{ v.version }}</a></td><td>{{ v.created_at|de_datetime }}</td><td><code>{{ v.sha256[:16] }}…</code></td><td>{{ badge(v.status) }}</td></tr>{% endfor %}</tbody></table></div>
+<div class="card"><h2 class="card-title">Protokoll</h2><table class="table table-compact"><tbody>{% for h in history %}<tr><td>{{ h.timestamp|de_datetime }}</td><td>{{ h.username }}</td><td>{{ h.action|action_label }}</td><td class="pre clip">{{ h.old_value or '' }}</td><td class="pre clip">{{ h.new_value or '' }}</td><td>{{ h.reason or '' }}</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

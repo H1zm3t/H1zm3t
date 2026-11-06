@@ -1,0 +1,43 @@
+{% from "partials/macros.html" import badge, empty %}
+<div class="card">
+  <h2 class="card-title">Prozessparameter</h2>
+  {% if obj.process_parameters %}
+  <table class="table table-compact"><thead><tr><th>Parameter</th><th class="num">Wert</th><th>Einheit</th></tr></thead><tbody>
+  {% for p in obj.process_parameters %}<tr><td>{{ p.name }}</td><td class="num">{% if p.numeric is defined %}{{ p.numeric|de_num }}{% else %}{{ p.value }}{% endif %}</td><td>{{ p.unit }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}{{ empty('Keine allgemeinen Prozessparameter erfasst.') }}{% endif %}
+</div>
+{% if obj.recipe %}
+<div class="card">
+  <h2 class="card-title">Rezeptur <a href="/rezepturen/{{ obj.recipe.id }}">{{ obj.recipe.label }}</a> {{ badge(obj.recipe.status) }}</h2>
+  <table class="table table-compact"><thead><tr><th>Pos.</th><th>Material</th><th>Charge</th><th>Funktion</th><th class="num">Gew.-%</th><th class="num">Soll</th><th class="num">Ist</th><th>Einheit</th></tr></thead><tbody>
+  {% for i in obj.recipe.items %}<tr><td>{{ i.position }}</td><td><a href="/materialien/{{ i.material.id }}">{{ i.material.label }}</a></td><td>{{ i.batch.batch_number if i.batch else '' }}</td><td>{{ i.function or '' }}</td><td class="num">{{ i.weight_percent|de_num }}</td><td class="num">{{ i.target_amount|de_num }}</td><td class="num">{{ i.actual_amount|de_num }}</td><td>{{ i.unit or '' }}</td></tr>{% endfor %}
+  </tbody><tfoot><tr><th colspan="4">Summe</th><th class="num">{{ obj.recipe.percent_sum|de_num }}</th><th colspan="3">{% if recipe_check %}{{ badge('vollständig' if recipe_check.ok else 'fehlerhaft') }}{% endif %}</th></tr></tfoot></table>
+</div>
+{% endif %}
+{% for p in module_panels %}
+<div class="card module-panel">
+  <h2 class="card-title">{{ p.title }} <span class="badge badge-info">Modul</span></h2>
+  {% with ctx = p.context %}{% include p.template %}{% endwith %}
+</div>
+{% endfor %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Proben</h2>{% if user.has('create') %}<a class="btn btn-sm" href="/proben/neu?experiment_id={{ obj.id }}&order_id={{ obj.order_id or '' }}&recipe_id={{ obj.recipe_id or '' }}">+ Probe</a>{% endif %}</div>
+    {% if samples %}<table class="table table-compact"><tbody>{% for s in samples %}<tr><td><a href="/proben/{{ s.id }}">{{ s.code }}</a></td><td>{{ s.name }}</td><td>{{ s.sample_type }}</td><td>{{ badge(s.status) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('Keine Proben.') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Prüfungen / Messdaten</h2>{% if user.has('create') %}<a class="btn btn-sm" href="/messdaten/neu?experiment_id={{ obj.id }}">+ Messdaten</a>{% endif %}</div>
+    {% if measurements %}<table class="table table-compact"><thead><tr><th>ID</th><th>Messgröße</th><th>Probe</th><th class="num">n</th><th class="num">Mittelwert</th><th class="num">s</th></tr></thead><tbody>{% for m in measurements %}{% set st = m.stats %}<tr><td><a href="/messdaten/{{ m.id }}">{{ m.code }}</a></td><td>{{ m.property_name }} [{{ m.unit or '-' }}]</td><td>{{ m.sample.code if m.sample else '' }}</td><td class="num">{{ st.n }}</td><td class="num">{{ st.mean|de_num(2) if st.mean is not none else '' }}</td><td class="num">{{ st.std|de_num(2) if st.std is not none else '' }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('Keine Messdaten.') }}{% endif %}
+  </div>
+</div>
+{% if module_records %}
+<div class="card"><h2 class="card-title">Weitere Moduldatensätze</h2>
+<table class="table table-compact"><tbody>{% for r in module_records %}{% set m = registry.get(r.module_key) %}<tr><td><a href="/moduldatensatz/{{ r.id }}">{{ r.code }}</a></td><td>{{ m.name if m else r.module_key }}</td><td>{{ r.title }}</td><td>{{ r.created_at|de_date }}</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
+{% if snapshots %}
+<div class="card"><h2 class="card-title">Eingefrorene Stände (Snapshots)</h2>
+<table class="table table-compact"><thead><tr><th>Zeitpunkt</th><th>Anlass</th><th>Revision</th><th>Von</th><th>SHA-256</th></tr></thead><tbody>
+{% for s in snapshots %}<tr><td>{{ s.created_at|de_datetime }}</td><td>{{ s.kind }}</td><td>{{ s.revision }}</td><td>{{ s.created_by.full_name if s.created_by else '' }}</td><td><a href="/versuche/{{ obj.id }}/snapshot/{{ s.id }}"><code>{{ s.sha256[:16] }}…</code></a></td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}

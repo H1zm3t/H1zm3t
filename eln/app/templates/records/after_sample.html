@@ -1,0 +1,7 @@
+{% from "partials/macros.html" import badge, empty %}
+<div class="grid-2">
+<div class="card"><h2 class="card-title">Abgeleitete Proben</h2>
+{% if descendants %}<ul class="tree">{% for depth, s in descendants %}<li style="padding-left: {{ depth * 1.4 }}rem">↳ <a href="/proben/{{ s.id }}">{{ s.code }}</a> {{ s.name }} <span class="muted">({{ s.sample_type }})</span> {{ badge(s.status) }}</li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>
+<div class="card"><h2 class="card-title">Durchgeführte Prüfungen</h2>
+{% if measurements %}<table class="table table-compact"><tbody>{% for m in measurements %}{% set st = m.stats %}<tr><td><a href="/messdaten/{{ m.id }}">{{ m.code }}</a></td><td>{{ m.property_name }}</td><td class="num">{{ st.mean|de_num(2) if st.mean is not none else '' }} {{ m.unit or '' }}</td><td class="num">n={{ st.n }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
+</div>

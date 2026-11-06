@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge, empty %}
+{% block title %}Compoundierung{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Compoundierung', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Compoundierung</h1><p class="muted">Compoundierläufe auf dem Doppelschneckenextruder</p></div>
+<div class="actions"><a class="btn" href="/module/compoundierung/vergleich">Läufe vergleichen</a>{% if user.has('create') %}<a class="btn btn-primary" href="/module/compoundierung/neu">+ Compoundierlauf</a>{% endif %}</div></div>
+<div class="card no-pad">{% if runs %}<table class="table"><thead><tr><th>Lauf</th><th>Bezeichnung</th><th>Versuch</th><th>Rezeptur</th><th>Extruder</th><th>Start</th><th class="num">Durchsatz</th><th class="num">Drehzahl</th><th class="num">T Schmelze</th><th>Status</th></tr></thead><tbody>
+{% for r in runs %}<tr><td><a href="/module/compoundierung/{{ r.id }}">{{ r.code }}</a></td><td>{{ r.title }}</td><td><a href="/versuche/{{ r.experiment.id }}">{{ r.experiment.code }}</a></td><td>{{ r.recipe.code ~ ' Rev. ' ~ r.recipe.revision if r.recipe else '' }}</td><td>{{ r.device.name if r.device else '' }}</td><td>{{ r.start_time|de_datetime }}</td><td class="num">{{ r.throughput_actual|de_num }}</td><td class="num">{{ r.screw_speed|de_num }}</td><td class="num">{{ r.melt_temperature|de_num }}</td><td>{{ badge(r.status) }}</td></tr>{% endfor %}
+</tbody></table>{% else %}{{ empty('Noch keine Compoundierläufe. Läufe werden üblicherweise aus einem Versuch heraus angelegt.') }}{% endif %}</div>
+{% endblock %}

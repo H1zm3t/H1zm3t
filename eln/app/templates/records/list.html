@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs %}
+{% block title %}{{ d.plural }}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([(d.plural, none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ d.plural }}</h1><p class="muted">{{ count }} Einträge{% if not show_all and d.archive_status %} (ohne »{{ d.archive_status }}«){% endif %}</p></div>
+  <div class="actions">
+    {% if user.has('export') %}
+    <div class="dropdown"><button class="btn" type="button" data-dropdown>Export</button>
+      <div class="dropdown-menu dropdown-right"><a href="{{ d.url }}/export.xlsx">Excel (.xlsx)</a><a href="{{ d.url }}/export.csv">CSV</a><a href="{{ d.url }}/export.json">JSON</a></div></div>
+    {% endif %}
+    {% if d.key == 'recipe' %}<a class="btn" href="/rezepturen/vergleich">Rezepturen vergleichen</a>{% endif %}
+    {% if can_create %}<a class="btn btn-primary" href="{{ d.url }}/neu">+ {{ d.label }} anlegen</a>{% endif %}
+  </div>
+</div>
+<form class="filter-bar" method="get">
+  {% if status_options %}
+  <label>Status <select name="status" data-autosubmit><option value="">alle (aktiv)</option>{% for s in status_options %}<option {% if s == status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+  {% endif %}
+  {% if d.archive_status %}<label class="check"><input type="checkbox" name="alle" value="1" {% if show_all %}checked{% endif %} data-autosubmit> inkl. »{{ d.archive_status }}«</label>{% endif %}
+  {% if d.key in ('order','experiment','task','device','project') %}<label class="check"><input type="checkbox" name="meine" value="1" {% if mine %}checked{% endif %} data-autosubmit> nur meine</label>{% endif %}
+  {% if d.key == 'task' %}<label class="check"><input type="checkbox" name="offen" value="1" {% if request.query_params.get('offen') %}checked{% endif %} data-autosubmit> nur offene</label>{% endif %}
+  <input type="search" placeholder="In Tabelle filtern …" data-table-filter="main-table">
+</form>
+<div class="card no-pad">
+  <div id="main-table" data-table data-columns='{{ columns|map("list")|list|tojson }}'></div>
+  <script type="application/json" data-table-rows="main-table">{{ rows_json|safe }}</script>
+</div>
+{% endblock %}

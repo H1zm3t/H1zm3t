@@ -81,8 +81,16 @@ def to_xlsx(sheets: list[tuple[str, list[str], list[list[Any]]]]) -> bytes:
     wb = Workbook()
     wb.remove(wb.active)
     head_fill = PatternFill("solid", fgColor="1F4E79")
+    used: set[str] = set()
     for title, headers, rows in sheets:
-        ws = wb.create_sheet(title=title[:31] or "Daten")
+        clean = "".join("_" if ch in '[]:*?/\\' else ch for ch in (title or "Daten")).strip("' ")[:31] or "Daten"
+        base, n = clean, 2
+        while clean.lower() in used:
+            suffix = f" ({n})"
+            clean = base[:31 - len(suffix)] + suffix
+            n += 1
+        used.add(clean.lower())
+        ws = wb.create_sheet(title=clean)
         ws.append(headers)
         for c in ws[1]:
             c.font = Font(bold=True, color="FFFFFF")

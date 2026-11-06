@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, field, csrf, reason_field %}
+{% block title %}{{ module.name }}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([(module.name, module.base_url), (rec.code if rec else 'Neu', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ module.name }}: {% if rec %}{{ rec.code }} bearbeiten{% else %}neuer {{ module.record_label }}{% endif %}</h1></div>
+<form method="post" class="card form">{{ csrf() }}
+{% for group, specs in groups.items() %}<fieldset><legend>{{ group }}</legend><div class="form-grid">{% for s in specs %}{{ field(s, values.get(s.name), options, errors) }}{% endfor %}</div></fieldset>{% endfor %}
+{% if rec %}<div class="form-grid">{{ reason_field(false) }}</div>{% endif %}
+<div class="form-actions"><a class="btn" href="{{ module.base_url }}{% if rec %}/{{ rec.id }}{% endif %}">Abbrechen</a><button class="btn btn-primary">Speichern</button></div></form>
+{% endblock %}

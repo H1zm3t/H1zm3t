@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf %}
+{% block title %}Einstellungen{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Einstellungen', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Systemeinstellungen</h1></div>
+<form method="post" class="card form">{{ csrf() }}
+{% for d, value in items %}
+  <div class="field">
+  {% if d.kind == 'bool' %}<label class="check"><input type="checkbox" name="{{ d.key }}" value="1" {% if value %}checked{% endif %}> <strong>{{ d.label }}</strong></label>
+  {% else %}<label for="s-{{ d.key }}"><strong>{{ d.label }}</strong></label><input id="s-{{ d.key }}" name="{{ d.key }}" value="{{ value }}">{% endif %}
+  <small class="help">{{ d.help }}</small></div>
+{% endfor %}
+<label class="field"><span>Änderungsgrund</span><input name="reason"></label>
+<div class="form-actions"><button class="btn btn-primary">Speichern</button></div></form>
+<div class="card"><h2 class="card-title">Konfigurationsdatei (.env) – nur lesend</h2>
+<dl class="kv-grid">
+<div class="kv"><dt>Datenverzeichnis</dt><dd><code>{{ env.data_dir }}</code></dd></div>
+<div class="kv"><dt>Dateiablage</dt><dd><code>{{ env.files_dir }}</code></dd></div>
+<div class="kv"><dt>Sicherungsziel</dt><dd><code>{{ env.backup_dir }}</code></dd></div>
+<div class="kv"><dt>Adresse</dt><dd>http://{{ env.host }}:{{ env.port }}</dd></div>
+<div class="kv"><dt>Sitzungsablauf</dt><dd>{{ env.session_timeout_min }} min</dd></div>
+<div class="kv"><dt>Max. Uploadgröße</dt><dd>{{ env.max_upload_mb }} MB</dd></div>
+<div class="kv"><dt>Sperre nach Fehlversuchen</dt><dd>{{ env.max_failed_logins }} Versuche / {{ env.lockout_minutes }} min</dd></div>
+</dl><p class="muted small">Änderungen dieser Werte in der Datei .env im Programmordner; danach Neustart.</p></div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge %}
+{% block title %}System{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('System', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Systeminformation</h1></div>
+<div class="grid-2">
+<div class="card"><dl class="kv-grid">
+<div class="kv"><dt>Version</dt><dd>{{ version }}</dd></div><div class="kv"><dt>Python</dt><dd>{{ python }}</dd></div>
+<div class="kv kv-full"><dt>Plattform</dt><dd>{{ platform }}</dd></div>
+<div class="kv kv-full"><dt>Datenbank</dt><dd><code>{{ settings.database_url }}</code></dd></div>
+<div class="kv"><dt>Schema-Version</dt><dd>{{ migration_current }} {% if migration_current == migration_head %}{{ badge('aktuell') }}{% else %}{{ badge('veraltet') }}{% endif %}</dd></div>
+<div class="kv"><dt>Aktive Sitzungen</dt><dd>{{ sessions }}</dd></div>
+<div class="kv kv-full"><dt>Audit Trail</dt><dd>{{ badge('intakt' if chain.ok else 'fehlerhaft') }} {{ chain.message }}</dd></div>
+<div class="kv kv-full"><dt>Protokolle</dt><dd><code>{{ settings.log_dir }}</code></dd></div>
+</dl></div>
+<div class="card"><h2 class="card-title">Datenbestand</h2><table class="table table-compact"><tbody>{% for k, v in counts.items() %}<tr><td>{{ k }}</td><td class="num">{{ v }}</td></tr>{% endfor %}</tbody></table></div>
+</div>
+<div class="alert alert-info">Hinweis: Diese Anwendung unterstützt die Grundsätze guter Dokumentation (ALCOA+). Sie ist ohne formelle Validierung, Risikobewertung, Verfahrensanweisungen und organisatorische Kontrollen <strong>nicht</strong> als GxP-validiertes oder 21-CFR-Part-11-/EU-GMP-konformes System anzusehen.</div>
+{% endblock %}

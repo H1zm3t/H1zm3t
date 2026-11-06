@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf %}
+{% block title %}{{ t.code }}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('MVR / MFR', '/module/mvr'), (t.code, none)]) }}{% endblock %}
+{% block content %}
+{% set st = t.stats %}
+<div class="page-head"><div><div class="eyebrow">MVR-Prüfung · {{ t.code }}</div><h1>Probe {{ t.sample.code }} – {{ t.temperature_c|de_num }} °C / {{ t.load_kg|de_num }} kg</h1></div>
+{% if user.has('create') %}<form method="post" action="/module/mvr/{{ t.id }}/uebernehmen">{{ csrf() }}<button class="btn btn-primary">{% if t.measurement_id %}Zum Messdatensatz{% else %}Als Messdatensatz übernehmen{% endif %}</button></form>{% endif %}</div>
+<div class="kpis"><div class="kpi"><span>n</span><strong>{{ st.n }}</strong></div><div class="kpi"><span>MVR Mittel</span><strong>{{ st.mean|de_num(2) }}</strong><small>cm³/10 min</small></div><div class="kpi"><span>Std.-Abw.</span><strong>{{ st.std|de_num(3) }}</strong></div><div class="kpi"><span>Min / Max</span><strong>{{ st.min|de_num(2) }} / {{ st.max|de_num(2) }}</strong></div><div class="kpi"><span>MFR</span><strong>{{ t.mfr|de_num(2) if t.mfr else '–' }}</strong><small>g/10 min</small></div></div>
+<div class="card"><dl class="kv-grid">
+<div class="kv"><dt>Probe</dt><dd><a href="/proben/{{ t.sample.id }}">{{ t.sample.label }}</a></dd></div>
+<div class="kv"><dt>Versuch</dt><dd>{% if t.experiment %}<a href="/versuche/{{ t.experiment.id }}">{{ t.experiment.label }}</a>{% else %}–{% endif %}</dd></div>
+<div class="kv"><dt>Gerät</dt><dd>{{ t.device.label if t.device else '–' }}</dd></div>
+<div class="kv"><dt>Einzelwerte</dt><dd>{% for v in t['values'] %}{{ v|de_num }}{% if not loop.last %}; {% endif %}{% endfor %}</dd></div>
+<div class="kv kv-full"><dt>Bemerkung</dt><dd>{{ t.remark or '–' }}</dd></div>
+<div class="kv"><dt>Erfasst</dt><dd>{{ t.created_at|de_datetime }}</dd></div>
+</dl><p class="muted small">Korrekturen erfolgen durch eine neue Prüfung (Beispielmodul ohne Bearbeitungsfunktion).</p></div>
+{% endblock %}

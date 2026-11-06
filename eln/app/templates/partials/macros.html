@@ -1,0 +1,89 @@
+{% macro badge(text) -%}
+{% if text %}<span class="badge badge-{{ text|status_class }}">{{ text }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro csrf() -%}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{%- endmacro %}
+
+{% macro crumbs(items) -%}
+<nav class="breadcrumbs" aria-label="Brotkrumen"><a href="/">Start</a>{% for label, url in items %} <span>›</span> {% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span class="current">{{ label }}</span>{% endif %}{% endfor %}</nav>
+{%- endmacro %}
+
+{% macro field(spec, value, options, errors) -%}
+{% set err = errors.get(spec.name) %}
+<div class="field w-{{ spec.width }} {% if err %}has-error{% endif %}">
+  <label for="f-{{ spec.name }}">{{ spec.label }}{% if spec.unit %} <span class="unit">[{{ spec.unit }}]</span>{% endif %}{% if spec.required %} <em class="req" title="Pflichtfeld">*</em>{% endif %}</label>
+  {% if spec.kind == 'textarea' %}
+  <textarea id="f-{{ spec.name }}" name="{{ spec.name }}" rows="4" {% if spec.required %}required{% endif %}>{{ value or '' }}</textarea>
+  {% elif spec.kind == 'select' %}
+  {% if spec.allow_custom %}
+  <input id="f-{{ spec.name }}" name="{{ spec.name }}" value="{{ value or '' }}" list="dl-{{ spec.name }}" {% if spec.required %}required{% endif %}>
+  <datalist id="dl-{{ spec.name }}">{% for o in spec.options %}<option value="{{ o }}">{% endfor %}</datalist>
+  {% else %}
+  <select id="f-{{ spec.name }}" name="{{ spec.name }}" {% if spec.required %}required{% endif %}>
+    {% if not spec.required %}<option value="">– bitte wählen –</option>{% endif %}
+    {% for o in spec.options %}<option value="{{ o }}" {% if o == value %}selected{% endif %}>{{ o }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  {% elif spec.kind == 'ref' %}
+  <select id="f-{{ spec.name }}" name="{{ spec.name }}" data-searchable {% if spec.required %}required{% endif %}>
+    <option value="">– {% if spec.required %}bitte wählen{% else %}keine Auswahl{% endif %} –</option>
+    {% for oid, olabel in options.get(spec.name, []) %}<option value="{{ oid }}" {% if oid|string == value|string %}selected{% endif %}>{{ olabel }}</option>{% endfor %}
+  </select>
+  {% elif spec.kind == 'multi_ref' %}
+  {% set sel = value if value is iterable and value is not string else [value] %}
+  {% set sel = sel|map('string')|list %}
+  <select id="f-{{ spec.name }}" name="{{ spec.name }}" multiple size="6" data-multi>
+    {% for oid, olabel in options.get(spec.name, []) %}<option value="{{ oid }}" {% if oid|string in sel %}selected{% endif %}>{{ olabel }}</option>{% endfor %}
+  </select>
+  <small class="help">Mehrfachauswahl mit Strg-Taste. Filter: Tippen im Feld darüber.</small>
+  {% elif spec.kind == 'date' %}
+  <input id="f-{{ spec.name }}" type="date" name="{{ spec.name }}" value="{{ value or '' }}" {% if spec.required %}required{% endif %}>
+  {% elif spec.kind == 'datetime' %}
+  <input id="f-{{ spec.name }}" type="datetime-local" name="{{ spec.name }}" value="{{ value or '' }}" {% if spec.required %}required{% endif %}>
+  {% elif spec.kind in ('float', 'int') %}
+  <input id="f-{{ spec.name }}" type="text" inputmode="decimal" name="{{ spec.name }}" value="{{ value if value is not none else '' }}" {% if spec.required %}required{% endif %} placeholder="{{ spec.placeholder or ('z. B. 12,5' if spec.kind == 'float' else '') }}">
+  {% elif spec.kind == 'bool' %}
+  <label class="check"><input type="checkbox" name="{{ spec.name }}" value="1" {% if value %}checked{% endif %}> Ja</label>
+  {% else %}
+  <input id="f-{{ spec.name }}" type="text" name="{{ spec.name }}" value="{{ value or '' }}" {% if spec.required %}required{% endif %} {% if spec.placeholder %}placeholder="{{ spec.placeholder }}"{% endif %}>
+  {% endif %}
+  {% if err %}<div class="error-msg">{{ err }}</div>{% endif %}
+  {% if spec.help %}<small class="help">{{ spec.help }}</small>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro reason_field(required, value='') -%}
+<div class="field w-full reason-field {% if required %}is-required{% endif %}">
+  <label for="f-reason">Änderungsgrund{% if required %} <em class="req">*</em>{% endif %}</label>
+  <input id="f-reason" type="text" name="reason" value="{{ value }}" {% if required %}required{% endif %} maxlength="500" placeholder="{% if required %}Pflicht: Warum wird geändert?{% else %}optional{% endif %}">
+  <small class="help">Wird mit jeder Änderung im Audit Trail gespeichert.</small>
+</div>
+{%- endmacro %}
+
+{% macro pagination(page, pages, base_qs) -%}
+{% if pages > 1 %}
+<nav class="pagination">
+  {% if page > 1 %}<a class="btn btn-sm" href="?{{ base_qs }}&page={{ page - 1 }}">‹ Zurück</a>{% endif %}
+  <span>Seite {{ page }} von {{ pages }}</span>
+  {% if page < pages %}<a class="btn btn-sm" href="?{{ base_qs }}&page={{ page + 1 }}">Weiter ›</a>{% endif %}
+</nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro kv(label, value) -%}
+<div class="kv"><dt>{{ label }}</dt><dd>{{ value if value not in (none, '') else '–' }}</dd></div>
+{%- endmacro %}
+
+{% macro empty(text='Keine Einträge vorhanden.') -%}<p class="empty">{{ text }}</p>{%- endmacro %}
+
+{% macro reason_dialog(id, action, title, button, hidden={}, required=True, danger=False) -%}
+<dialog id="{{ id }}" class="dialog">
+  <form method="post" action="{{ action }}">
+    {{ csrf() }}
+    {% for k, v in hidden.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <h3>{{ title }}</h3>
+    <label class="field"><span>Begründung {% if required %}<em class="req">*</em>{% endif %}</span><textarea name="reason" rows="3" {% if required %}required{% endif %}></textarea></label>
+    <div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ button }}</button></div>
+  </form>
+</dialog>
+{%- endmacro %}

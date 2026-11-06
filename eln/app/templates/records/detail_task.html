@@ -1,0 +1,8 @@
+{% from "partials/macros.html" import csrf %}
+<div class="card">
+  {% if task_target %}<p>Bezug: <a href="{{ task_target.url }}">{{ task_target.label }}</a></p>{% endif %}
+  {% if obj.is_overdue %}<div class="alert alert-warning">Diese Aufgabe ist überfällig (fällig am {{ obj.due_date|de_date }}).</div>{% endif %}
+  {% if obj.status != 'erledigt' and user.has('edit') %}
+  <form method="post" action="/aufgaben/{{ obj.id }}/status" class="inline">{{ csrf() }}<input type="hidden" name="status" value="erledigt"><button class="btn btn-success" type="submit">Als erledigt markieren</button></form>
+  {% endif %}
+</div>

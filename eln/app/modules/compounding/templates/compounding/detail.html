@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge, csrf, empty %}
+{% block title %}{{ run.code }}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Versuche', '/versuche'), (run.experiment.code, '/versuche/' ~ run.experiment.id|string), ('Compoundierlauf ' ~ run.code, none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">Compoundierlauf · {{ run.code }} · Version {{ run.version }}</div><h1>{{ run.title }} {{ badge(run.status) }}</h1>
+<p class="muted">Versuch <a href="/versuche/{{ run.experiment.id }}">{{ run.experiment.label }}</a> {{ badge(run.experiment.status) }}</p></div>
+<div class="actions">{% if can_edit %}<a class="btn" href="/module/compoundierung/{{ run.id }}/bearbeiten">Bearbeiten</a>{% endif %}
+{% if user.has('create') %}<button class="btn btn-primary" type="button" data-open-dialog="sample-dialog">+ Erzeugte Probe/Charge</button>{% endif %}</div></div>
+{% if run.experiment.locked %}<div class="alert alert-info">Der Versuch ist gesperrt – Änderungen erst nach neuer Revision.</div>{% endif %}
+{% for w in device_warnings %}<div class="alert alert-warning">⚠ {{ w }}</div>{% endfor %}
+<div class="kpis">
+{% for attr, label, unit in params %}<div class="kpi"><span>{{ label }}</span><strong>{{ run[attr]|de_num if run[attr] is not none else '–' }}</strong><small>{{ unit }}</small></div>{% endfor %}
+</div>
+<div class="grid-2">
+<div class="card"><h2 class="card-title">Allgemein</h2><dl class="kv-grid">
+<div class="kv"><dt>Extruder</dt><dd>{% if run.device %}<a href="/geraete/{{ run.device.id }}">{{ run.device.label }}</a>{% else %}–{% endif %}</dd></div>
+<div class="kv"><dt>Rezeptur</dt><dd>{% if run.recipe %}<a href="/rezepturen/{{ run.recipe.id }}">{{ run.recipe.label }}</a>{% else %}–{% endif %}</dd></div>
+<div class="kv"><dt>Anlagenfahrer</dt><dd>{{ run.operator.full_name if run.operator else '–' }}</dd></div>
+<div class="kv"><dt>Start / Ende</dt><dd>{{ run.start_time|de_datetime or '–' }} – {{ run.end_time|de_datetime }}{% if run.duration_min %} ({{ run.duration_min|de_num }} min){% endif %}</dd></div>
+<div class="kv"><dt>Durchsatz Soll</dt><dd>{{ run.throughput_set|de_num }} kg/h</dd></div>
+<div class="kv"><dt>Summe Dosierung Ist</dt><dd>{{ feed_total|de_num }} kg/h</dd></div>
+<div class="kv kv-full"><dt>Schneckenkonfiguration</dt><dd class="pre">{{ run.screw_config or '–' }}</dd></div>
+<div class="kv"><dt>Kühlung</dt><dd class="pre">{{ run.cooling or '–' }}</dd></div>
+<div class="kv"><dt>Granulierung</dt><dd class="pre">{{ run.pelletizing or '–' }}</dd></div>
+</dl></div>
+<div class="card"><h2 class="card-title">Temperaturprofil</h2><div class="chart-box"><canvas data-chart="zones"></canvas></div></div>
+</div>
+<script type="application/json" data-compounding-charts>{{ chart_json|safe }}</script>
+<div class="grid-2">
+<div class="card"><h2 class="card-title">Zylindertemperaturzonen</h2>{% if run.zones %}<table class="table table-compact"><thead><tr><th>Zone</th><th class="num">Soll °C</th><th class="num">Ist °C</th><th class="num">Δ</th></tr></thead><tbody>{% for z in run.zones %}<tr><td>{{ z.name }}</td><td class="num">{{ z.set_temp|de_num }}</td><td class="num">{{ z.actual_temp|de_num }}</td><td class="num">{% if z.set_temp is not none and z.actual_temp is not none %}{{ (z.actual_temp - z.set_temp)|de_num(1) }}{% endif %}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
+<div class="card"><h2 class="card-title">Dosierung</h2>{% if run.feeders %}<table class="table table-compact"><thead><tr><th>Dosierstelle</th><th>Gerät</th><th>Komponente</th><th class="num">Soll</th><th class="num">Ist</th><th class="num">Anteil</th></tr></thead><tbody>{% for f in run.feeders %}<tr><td>{{ f.feed_point }}</td><td>{{ f.feeder or '' }}</td><td>{% if f.material %}<a href="/materialien/{{ f.material.id }}">{{ f.material.name }}</a>{% else %}{{ f.component or '' }}{% endif %}</td><td class="num">{{ f.set_rate|de_num }}</td><td class="num">{{ f.actual_rate|de_num }}</td><td class="num">{% if feed_total and f.actual_rate %}{{ (f.actual_rate / feed_total * 100)|de_num(1) }} %{% endif %}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
+</div>
+<div class="card"><h2 class="card-title">Prozessverlauf</h2>
+{% if run.readings %}<div class="chart-box chart-lg"><canvas data-chart="readings"></canvas></div>
+<table class="table table-compact"><thead><tr><th class="num">min</th><th class="num">Drehzahl</th><th class="num">Drehmoment %</th><th class="num">Druck bar</th><th class="num">T Schmelze °C</th><th class="num">Durchsatz kg/h</th><th>Bemerkung</th></tr></thead><tbody>{% for r in run.readings %}<tr><td class="num">{{ r.minute|de_num }}</td><td class="num">{{ r.screw_speed|de_num }}</td><td class="num">{{ r.torque|de_num }}</td><td class="num">{{ r.melt_pressure|de_num }}</td><td class="num">{{ r.melt_temperature|de_num }}</td><td class="num">{{ r.throughput|de_num }}</td><td>{{ r.remark or '' }}</td></tr>{% endfor %}</tbody></table>
+{% else %}{{ empty('Kein Prozessverlauf erfasst.') }}{% endif %}</div>
+<div class="card"><h2 class="card-title">Dokumentation</h2><dl class="kv-grid">
+{% for attr, label in (('observations','Prozessbeobachtungen'),('disturbances','Störungen'),('deviations','Abweichungen'),('sampling','Probenahmen'),('evaluation','Bewertung')) %}<div class="kv kv-full"><dt>{{ label }}</dt><dd class="pre">{{ run[attr] or '–' }}</dd></div>{% endfor %}
+</dl></div>
+<div class="card"><h2 class="card-title">Erzeugte Proben / Chargen</h2>{% if samples %}<ul class="link-list">{% for s in samples %}<li><a href="/proben/{{ s.id }}">{{ s.label }}</a> {{ s.quantity|de_num }} {{ s.unit or '' }} {{ badge(s.status) }}</li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>
+<dialog id="sample-dialog" class="dialog"><form method="post" action="/module/compoundierung/{{ run.id }}/probe">{{ csrf() }}
+<h3>Erzeugte Probe / Charge anlegen</h3>
+<label class="field"><span>Bezeichnung</span><input name="name" value="Granulat {{ run.code }}"></label>
+<div class="form-grid"><label class="field w-half"><span>Menge</span><input name="quantity" inputmode="decimal"></label><label class="field w-half"><span>Einheit</span><select name="unit"><option>kg</option><option>g</option></select></label></div>
+<label class="field"><span>Lagerort</span><input name="storage_location"></label>
+<div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-primary">Anlegen</button></div></form></dialog>
+<div class="card">{% include "partials/panels.html" %}</div>
+{% endblock %}

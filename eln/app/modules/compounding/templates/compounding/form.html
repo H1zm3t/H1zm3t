@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, field, csrf, reason_field %}
+{% block title %}Compoundierlauf{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Compoundierung', '/module/compoundierung'), (run.code if run else 'Neu', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{% if run %}Compoundierlauf {{ run.code }} bearbeiten{% else %}Neuer Compoundierlauf{% endif %}</h1></div>
+{% if errors.get('__all__') %}<div class="alert alert-error">{{ errors['__all__'] }}</div>{% endif %}
+<form method="post" class="card form" data-dirty-check>{{ csrf() }}
+{% for group, specs in groups.items() %}<fieldset><legend>{{ group }}</legend><div class="form-grid">{% for s in specs %}{{ field(s, values.get(s.name), options, errors) }}{% endfor %}</div></fieldset>
+{% if group == 'Allgemein' %}
+<fieldset><legend>Dosierstellen und Dosiergeräte</legend>
+<table class="table table-edit" data-rows="feeder"><thead><tr><th>Dosierstelle</th><th>Dosiergerät</th><th>Material</th><th>Komponente (frei)</th><th>Soll kg/h</th><th>Ist kg/h</th><th></th></tr></thead><tbody>
+{% for f in tables.feeders %}{% set i = loop.index0 %}<tr data-row><td><input name="feeder-{{ i }}-feed_point" value="{{ f.feed_point }}" placeholder="z. B. Haupteinzug"></td><td><input name="feeder-{{ i }}-feeder" value="{{ f.feeder }}" placeholder="z. B. Brabender DDW"></td>
+<td><select name="feeder-{{ i }}-material_id"><option value="">–</option>{% for m in materials %}<option value="{{ m.id }}" {% if m.id|string == f.material_id|string %}selected{% endif %}>{{ m.label }}</option>{% endfor %}</select></td>
+<td><input name="feeder-{{ i }}-component" value="{{ f.component }}"></td><td><input name="feeder-{{ i }}-set_rate" value="{{ f.set_rate }}" class="w-num" inputmode="decimal"></td><td><input name="feeder-{{ i }}-actual_rate" value="{{ f.actual_rate }}" class="w-num" inputmode="decimal"></td><td><button type="button" class="icon-btn" data-remove-row>✕</button></td></tr>{% endfor %}
+</tbody><template><tr data-row><td><input name="feeder-__i__-feed_point"></td><td><input name="feeder-__i__-feeder"></td><td><select name="feeder-__i__-material_id"><option value="">–</option>{% for m in materials %}<option value="{{ m.id }}">{{ m.label }}</option>{% endfor %}</select></td><td><input name="feeder-__i__-component"></td><td><input name="feeder-__i__-set_rate" class="w-num" inputmode="decimal"></td><td><input name="feeder-__i__-actual_rate" class="w-num" inputmode="decimal"></td><td><button type="button" class="icon-btn" data-remove-row>✕</button></td></tr></template></table>
+<button type="button" class="btn btn-sm" data-add-row="feeder">+ Dosierung</button>
+</fieldset>
+<fieldset><legend>Zylindertemperaturzonen</legend>
+<p class="help">Anzahl und Bezeichnung frei wählbar. Vorlage laden setzt die Zonen des gewählten Extruders (konfigurierbar in der Modulkonfiguration).</p>
+<script type="application/json" data-zone-templates>{{ zone_templates_json|safe }}</script>
+<script type="application/json" data-default-zones>{{ default_zones_json|safe }}</script>
+<table class="table table-edit" data-rows="zone"><thead><tr><th>Zone</th><th>Soll °C</th><th>Ist °C</th><th></th></tr></thead><tbody>
+{% for z in tables.zones %}{% set i = loop.index0 %}<tr data-row><td><input name="zone-{{ i }}-name" value="{{ z.name }}"></td><td><input name="zone-{{ i }}-set_temp" value="{{ z.set_temp }}" class="w-num" inputmode="decimal"></td><td><input name="zone-{{ i }}-actual_temp" value="{{ z.actual_temp }}" class="w-num" inputmode="decimal"></td><td><button type="button" class="icon-btn" data-remove-row>✕</button></td></tr>{% endfor %}
+</tbody><template><tr data-row><td><input name="zone-__i__-name"></td><td><input name="zone-__i__-set_temp" class="w-num" inputmode="decimal"></td><td><input name="zone-__i__-actual_temp" class="w-num" inputmode="decimal"></td><td><button type="button" class="icon-btn" data-remove-row>✕</button></td></tr></template></table>
+<button type="button" class="btn btn-sm" data-add-row="zone">+ Zone</button> <button type="button" class="btn btn-sm" data-load-zones>Zonenvorlage laden</button> <button type="button" class="btn btn-sm" data-fill-set-temp>Solltemperatur für alle setzen …</button>
+</fieldset>
+{% endif %}
+{% if group == 'Prozessparameter' %}
+<fieldset><legend>Prozessverlauf (Messpunkte)</legend>
+<table class="table table-edit" data-rows="reading"><thead><tr><th>Zeit [min]</th><th>Drehzahl [1/min]</th><th>Drehmoment [%]</th><th>Druck [bar]</th><th>T Schmelze [°C]</th><th>Durchsatz [kg/h]</th><th>Bemerkung</th><th></th></tr></thead><tbody>
+{% for r in tables.readings %}{% set i = loop.index0 %}<tr data-row>{% for k in ('minute','screw_speed','torque','melt_pressure','melt_temperature','throughput') %}<td><input name="reading-{{ i }}-{{ k }}" value="{{ r[k] }}" class="w-num" inputmode="decimal"></td>{% endfor %}<td><input name="reading-{{ i }}-remark" value="{{ r.remark }}"></td><td><button type="button" class="icon-btn" data-remove-row>✕</button></td></tr>{% endfor %}
+</tbody><template><tr data-row>{% for k in ('minute','screw_speed','torque','melt_pressure','melt_temperature','throughput') %}<td><input name="reading-__i__-{{ k }}" class="w-num" inputmode="decimal"></td>{% endfor %}<td><input name="reading-__i__-remark"></td><td><button type="button" class="icon-btn" data-remove-row>✕</button></td></tr></template></table>
+<button type="button" class="btn btn-sm" data-add-row="reading">+ Messpunkt</button>
+</fieldset>
+{% endif %}
+{% endfor %}
+{% if run %}<div class="form-grid">{{ reason_field(run.experiment.status not in ('Entwurf','geplant','in Bearbeitung','pausiert'), reason) }}</div>{% endif %}
+<div class="form-actions sticky-actions"><a class="btn" href="/module/compoundierung{% if run %}/{{ run.id }}{% endif %}">Abbrechen</a><button class="btn btn-primary">Speichern</button></div>
+</form>
+{% endblock %}

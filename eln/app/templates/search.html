@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge, csrf, pagination, empty %}
+{% block title %}Suche{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Suche', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Suche</h1></div>
+<form method="get" class="card form search-form">
+  <div class="form-grid">
+    <div class="field w-full"><label>Suchbegriff(e)</label><input type="search" name="q" value="{{ p.q }}" placeholder="z. B. PP-Compound, Charge 4711, Bruchdehnung, Messbericht.pdf" autofocus></div>
+  </div>
+  <details {% if p.has_filters or p.types %}open{% endif %}><summary>Filter</summary>
+  <div class="form-grid">
+    <div class="field w-full"><label>Datensatztypen</label><div class="check-grid">{% for k, label in types %}<label class="check"><input type="checkbox" name="types" value="{{ k }}" {% if k in p.types %}checked{% endif %}> {{ label }}</label>{% endfor %}</div></div>
+    <div class="field w-third"><label>Status</label><select name="status"><option value="">alle</option>{% for s in statuses %}<option {% if s == p.status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>Verantwortlich / zuständig</label><select name="responsible_id"><option value="">alle</option>{% for i, l in users %}<option value="{{ i }}" {% if i == p.responsible_id %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>Auftraggeber / Kunde</label><input name="client" value="{{ p.client }}"></div>
+    <div class="field w-third"><label>Angelegt von</label><input type="date" name="date_from" value="{{ p.date_from.isoformat() if p.date_from else '' }}"></div>
+    <div class="field w-third"><label>Angelegt bis</label><input type="date" name="date_to" value="{{ p.date_to.isoformat() if p.date_to else '' }}"></div>
+    <div class="field w-third"><label>Schlagwörter</label><input name="tags" value="{{ p.tags }}" placeholder="kommagetrennt"></div>
+    <div class="field w-third"><label>Versuchsart</label><select name="experiment_type"><option value="">alle</option>{% for t in experiment_types %}<option {% if t == p.experiment_type %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>Fachbereich</label><select name="department"><option value="">alle</option>{% for t in departments %}<option {% if t == p.department %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>Gerät</label><select name="device_id"><option value="">alle</option>{% for i, l in devices %}<option value="{{ i }}" {% if i == p.device_id %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>Material</label><select name="material_id"><option value="">alle</option>{% for i, l in materials %}<option value="{{ i }}" {% if i == p.material_id %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>Charge</label><select name="batch_id"><option value="">alle</option>{% for i, l in batches %}<option value="{{ i }}" {% if i == p.batch_id %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>Sortierung</label><select name="sort">{% for k, l in sorts.items() %}<option value="{{ k }}" {% if k == p.sort %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label class="check"><input type="checkbox" name="include_files" value="1" {% if p.include_files %}checked{% endif %}> Anhänge durchsuchen (Dateiname, Beschreibung, Inhalt)</label></div>
+  </div>
+  </details>
+  <div class="form-actions"><a class="btn" href="/suche">Zurücksetzen</a><button class="btn btn-primary" type="submit">Suchen</button></div>
+</form>
+{% if saved %}<div class="saved-queries">Gespeicherte Suchen: {% for s in saved %}<span class="chip"><a href="/suche/gespeichert/{{ s.id }}">{{ s.name }}</a>{% if s.user_id == user.id %}<form method="post" action="/suche/gespeichert/{{ s.id }}/loeschen" class="inline" data-confirm="Gespeicherte Suche löschen?">{{ csrf() }}<button class="chip-x" title="löschen">×</button></form>{% endif %}</span>{% endfor %}</div>{% endif %}
+{% if executed %}
+<div class="card">
+  <div class="card-head"><h2 class="card-title">{{ result.total }} Treffer</h2>
+    <form method="post" action="/suche/speichern" class="inline-form">{{ csrf() }}<input type="hidden" name="query" value="{{ base_qs }}"><input name="name" placeholder="Name der Suche" required><label class="check"><input type="checkbox" name="shared" value="1"> für alle</label><button class="btn btn-sm">Suche speichern</button></form>
+  </div>
+  {% if result.counts %}<p class="muted small">{% for k, n in result.counts.items() %}{{ k|type_label }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+  {% if result.hits %}
+  <ul class="hits">{% for h in result.hits %}
+    <li><span class="badge badge-neutral">{{ h.type_label }}</span> <a href="{{ h.url }}"><strong>{{ h.code }}</strong> {{ h.title }}</a> {{ badge(h.status) }} <span class="muted small">{{ h.date|de_date }}</span>{% if h.snippet %}<div class="snippet">{{ h.snippet }}</div>{% endif %}</li>
+  {% endfor %}</ul>
+  {{ pagination(result.page, result.pages, base_qs) }}
+  {% else %}{{ empty('Keine Treffer. Tipp: weniger oder andere Begriffe verwenden, Filter entfernen.') }}{% endif %}
+</div>
+{% endif %}
+{% endblock %}

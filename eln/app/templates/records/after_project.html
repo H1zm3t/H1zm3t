@@ -1,0 +1,3 @@
+{% from "partials/macros.html" import badge, empty %}
+<div class="card"><div class="card-head"><h2 class="card-title">Aufträge</h2>{% if user.has('create') %}<a class="btn btn-sm" href="/auftraege/neu?project_id={{ obj.id }}">+ Auftrag</a>{% endif %}</div>
+{% if orders %}<table class="table"><tbody>{% for o in orders %}<tr><td><a href="/auftraege/{{ o.id }}">{{ o.code }}</a></td><td>{{ o.title }}</td><td>{{ o.client or '' }}</td><td>{{ badge(o.status) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>

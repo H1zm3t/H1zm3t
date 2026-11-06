@@ -90,6 +90,7 @@ def create_app(run_init: bool = True) -> FastAPI:
                            "Es ist ein unerwarteter Fehler aufgetreten. Er wurde im Fehlerprotokoll "
                            "(data/logs/fehler.log) festgehalten. Bitte informieren Sie die Administration.")
 
+    from .web import detail_hooks  # noqa: F401 - registriert Hooks
     from .web import (admin, analytics, attachments, audit_views, auth_views, dashboard, experiments, io_views,
                       records, recipes, search_views, api)
 
@@ -98,6 +99,9 @@ def create_app(run_init: bool = True) -> FastAPI:
         app.include_router(module.router)
 
     from .web.modules_web import module_router_guard
+    from .web.modules_web import router as modules_web_router
+
+    app.include_router(modules_web_router)
 
     for m in registry.all():
         r = m.router()

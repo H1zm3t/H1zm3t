@@ -1,0 +1,16 @@
+<fieldset>
+  <legend>Messwerte</legend>
+  <div class="form-grid">
+  <div class="field w-half {% if errors.get('values_text') %}has-error{% endif %}">
+    <label for="f-values">Werte (eine Zeile je Wert)</label>
+    <textarea id="f-values" name="values_text" rows="10" class="mono" placeholder="Nur Wert:&#10;52,3&#10;&#10;oder Bezugsgröße;Wert;Bezeichnung:&#10;0;52,3;Prüfkörper 1&#10;500;49,8">{{ request.query_params.get('values_text', '') or values_text }}</textarea>
+    {% if errors.get('values_text') %}<div class="error-msg">{{ errors['values_text'] }}</div>{% endif %}
+    <small class="help">Aus Excel kopierte Spalten (Tabulator-getrennt) werden ebenfalls erkannt.</small>
+  </div>
+  <div class="field w-half">
+    <label for="f-meta">Zusätzliche Metadaten</label>
+    <textarea id="f-meta" name="meta_text" rows="10" class="mono" placeholder="Prüfgeschwindigkeit = 50 mm/min&#10;Konditionierung = 23 °C / 50 % r. F.">{{ meta_text }}</textarea>
+    <small class="help">Format »Schlüssel = Wert« je Zeile oder JSON-Objekt.</small>
+  </div>
+  </div>
+</fieldset>

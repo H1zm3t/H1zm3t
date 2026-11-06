@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge %}
+{% block title %}Snapshot {{ exp.code }}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Versuche', '/versuche'), (exp.code, '/versuche/' ~ exp.id|string), ('Snapshot', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">Eingefrorener Stand · {{ snap.kind }} · Rev. {{ snap.revision }}</div><h1>{{ data.code }} – {{ data.title }}</h1>
+<p class="muted">{{ snap.created_at|de_datetime }} · {{ snap.created_by.full_name if snap.created_by else '' }}</p></div></div>
+<div class="alert {% if intact %}alert-success{% else %}alert-error{% endif %}">SHA-256 {{ snap.sha256 }} – {% if intact %}Prüfsumme stimmt, der Stand ist unverändert.{% else %}PRÜFSUMME WEICHT AB!{% endif %}</div>
+<div class="card"><dl class="kv-grid">
+{% for k, v in data.items() %}{% if v is not mapping and (v is string or v is number or v is none or v is boolean) %}<div class="kv {% if v is string and v|length > 80 %}kv-full{% endif %}"><dt>{{ k }}</dt><dd class="pre">{{ v if v not in (none, '') else '–' }}</dd></div>{% endif %}{% endfor %}
+</dl></div>
+<div class="card"><h2 class="card-title">Vollständiger Datenstand (JSON)</h2><pre class="json">{{ data|tojson(indent=2) }}</pre></div>
+{% endblock %}

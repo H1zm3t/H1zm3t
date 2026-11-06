@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, field, reason_field, csrf %}
+{% block title %}{{ d.label }} {% if obj %}bearbeiten{% else %}anlegen{% endif %}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([(d.plural, d.url)] + ([(obj.code, d.url ~ '/' ~ obj.id|string)] if obj else []) + [('Bearbeiten' if obj else 'Neu', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{% if obj %}{{ d.label }} {{ obj.code }} bearbeiten{% else %}{{ d.label }} anlegen{% endif %}</h1></div>
+{% if errors.get('__all__') %}<div class="alert alert-error">{{ errors['__all__'] }}</div>{% endif %}
+<form method="post" class="form card" novalidate data-dirty-check>
+  {{ csrf() }}
+  {% for group, specs in groups.items() %}
+  <fieldset>
+    {% if group %}<legend>{{ group }}</legend>{% endif %}
+    <div class="form-grid">
+      {% for spec in specs %}{{ field(spec, values.get(spec.name), options, errors) }}{% endfor %}
+    </div>
+  </fieldset>
+  {% endfor %}
+  {% if extra_template %}{% include extra_template %}{% endif %}
+  {% if obj %}<fieldset><div class="form-grid">{{ reason_field(reason_required, reason) }}</div></fieldset>{% endif %}
+  <p class="muted small"><em class="req">*</em> Pflichtfeld · Zahlen mit Dezimalkomma (z. B. 12,5) · Datum TT.MM.JJJJ</p>
+  <div class="form-actions sticky-actions">
+    <a class="btn" href="{% if obj %}{{ d.url }}/{{ obj.id }}{% else %}{{ d.url }}{% endif %}">Abbrechen</a>
+    <button type="submit" class="btn btn-primary">Speichern</button>
+  </div>
+</form>
+{% endblock %}

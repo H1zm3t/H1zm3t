@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf %}
+{% block title %}Neue MVR-Prüfung{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('MVR / MFR', '/module/mvr'), ('Neu', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Neue MVR-Prüfung</h1></div>
+<form method="post" class="card form">{{ csrf() }}
+<div class="form-grid">
+<div class="field w-half {% if errors.sample_id %}has-error{% endif %}"><label>Probe <em class="req">*</em></label><select name="sample_id" required><option value="">– bitte wählen –</option>{% for i, l in samples %}<option value="{{ i }}" {% if i|string == values.sample_id|string %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>{% if errors.sample_id %}<div class="error-msg">{{ errors.sample_id }}</div>{% endif %}</div>
+<div class="field w-half"><label>Gerät</label><select name="device_id"><option value="">–</option>{% for i, l in devices %}<option value="{{ i }}" {% if i|string == values.device_id|string %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+<div class="field w-third {% if errors.temperature_c %}has-error{% endif %}"><label>Prüftemperatur [°C] <em class="req">*</em></label><input name="temperature_c" value="{{ values.temperature_c }}" inputmode="decimal" required>{% if errors.temperature_c %}<div class="error-msg">{{ errors.temperature_c }}</div>{% endif %}</div>
+<div class="field w-third {% if errors.load_kg %}has-error{% endif %}"><label>Prüflast [kg] <em class="req">*</em></label><input name="load_kg" value="{{ values.load_kg }}" inputmode="decimal" required>{% if errors.load_kg %}<div class="error-msg">{{ errors.load_kg }}</div>{% endif %}</div>
+<div class="field w-third {% if errors.melt_density %}has-error{% endif %}"><label>Schmelzedichte [g/cm³]</label><input name="melt_density" value="{{ values.melt_density }}" inputmode="decimal"><small class="help">Für die MFR-Berechnung</small>{% if errors.melt_density %}<div class="error-msg">{{ errors.melt_density }}</div>{% endif %}</div>
+<div class="field w-full {% if errors['values'] %}has-error{% endif %}"><label>Einzelwerte MVR [cm³/10 min] <em class="req">*</em></label><textarea name="values" rows="4" placeholder="12,1; 12,4; 12,3">{{ values['values'] }}</textarea>{% if errors['values'] %}<div class="error-msg">{{ errors['values'] }}</div>{% endif %}<small class="help">Getrennt durch Semikolon oder Zeilenumbruch.</small></div>
+<div class="field w-full"><label>Bemerkung</label><textarea name="remark" rows="2">{{ values.remark }}</textarea></div>
+</div>
+<div class="form-actions"><a class="btn" href="/module/mvr">Abbrechen</a><button class="btn btn-primary">Speichern</button></div></form>
+{% endblock %}

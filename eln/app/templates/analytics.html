@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf, empty %}
+{% block title %}Auswertungen{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Auswertungen', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Auswertungen</h1></div>
+<div class="preset-bar">Vorlagen: {% for name, qs in presets %}<a class="chip" href="/auswertungen?{{ qs }}">{{ name }}</a>{% endfor %}</div>
+{% if saved %}<div class="saved-queries">Gespeichert: {% for s in saved %}<span class="chip"><a href="/suche/gespeichert/{{ s.id }}">{{ s.name }}</a>{% if s.user_id == user.id %}<form method="post" action="/suche/gespeichert/{{ s.id }}/loeschen" class="inline" data-confirm="Gespeicherte Auswertung löschen?">{{ csrf() }}<button class="chip-x">×</button></form>{% endif %}</span>{% endfor %}</div>{% endif %}
+<form method="get" class="card form" data-analysis-form>
+  <script type="application/json" data-analysis-meta>{{ meta_json|safe }}</script>
+  <div class="form-grid">
+    <div class="field w-third"><label>Datenquelle</label><select name="dataset" data-ds>{% for k, d in datasets.items() %}<option value="{{ k }}" {% if k == cfg.dataset %}selected{% endif %}>{{ d.label }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>Gruppieren nach (x)</label><select name="group_by" data-fields="all" data-value="{{ cfg.group_by }}"></select></div>
+    <div class="field w-third"><label>Reihen / Farbe nach</label><select name="series_by" data-fields="all" data-empty="– keine –" data-value="{{ cfg.series_by }}"></select></div>
+    <div class="field w-third"><label>Kennzahl</label><select name="metric">{% for k, l in metrics.items() %}<option value="{{ k }}" {% if k == cfg.metric %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>Wertfeld (numerisch)</label><select name="value_field" data-fields="numeric" data-empty="– keines (Anzahl) –" data-value="{{ cfg.value_field }}"></select></div>
+    <div class="field w-third"><label>Diagramm</label><select name="chart">{% for k, l in charts.items() %}<option value="{{ k }}" {% if k == cfg.chart %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field w-third"><label>x-Feld (nur Punktdiagramm)</label><select name="x_field" data-fields="numeric" data-empty="–" data-value="{{ cfg.x_field }}"></select></div>
+    <div class="field w-third"><label>Von</label><input type="date" name="date_from" value="{{ cfg.date_from }}"></div>
+    <div class="field w-third"><label>Bis</label><input type="date" name="date_to" value="{{ cfg.date_to }}"></div>
+    <div class="field w-third"><label>Filterfeld</label><select name="filter_field" data-fields="all" data-empty="– kein Filter –" data-value="{{ cfg.filter_field }}"></select></div>
+    <div class="field w-third"><label>Filterwert (enthält)</label><input name="filter_value" value="{{ cfg.filter_value }}"></div>
+  </div>
+  <div class="form-actions"><button class="btn btn-primary" type="submit">Auswerten</button></div>
+</form>
+{% if result %}
+  {% if result.error %}<div class="alert alert-error">{{ result.error }}</div>
+  {% else %}
+  <div class="card">
+    <div class="card-head"><h2 class="card-title">Ergebnis <span class="muted small">({{ result.row_count }} Datenzeilen)</span></h2>
+      <div class="actions">
+        {% if user.has('export') %}<a class="btn btn-sm" href="/auswertungen/export.xlsx?{{ query }}">Excel</a><a class="btn btn-sm" href="/auswertungen/export.csv?{{ query }}">CSV</a>{% endif %}
+        <form method="post" action="/auswertungen/speichern" class="inline-form">{{ csrf() }}<input type="hidden" name="query" value="{{ query }}"><input name="name" placeholder="Name" required><label class="check"><input type="checkbox" name="shared" value="1"> für alle</label><button class="btn btn-sm">Speichern</button></form>
+      </div></div>
+    {% if cfg.chart != 'none' %}<div class="chart-box chart-lg"><canvas data-chart="analysis"></canvas></div>{% endif %}
+    <script type="application/json" data-analysis-result>{{ result_json|safe }}</script>
+    <div class="table-scroll"><table class="table table-compact">
+      <thead><tr><th>Gruppe</th>{% if cfg.series_by %}<th>Reihe</th>{% endif %}<th class="num">Anzahl</th>{% if cfg.value_field %}<th class="num">Mittelwert</th><th class="num">Median</th><th class="num">Min</th><th class="num">Max</th><th class="num">Std.-Abw.</th>{% endif %}</tr></thead>
+      <tbody>{% for r in result.table %}<tr><td>{{ r.group }}</td>{% if cfg.series_by %}<td>{{ r.series }}</td>{% endif %}<td class="num">{{ r.n }}</td>{% if cfg.value_field %}<td class="num">{{ r.mean|de_num(3) if r.mean is not none }}</td><td class="num">{{ r.median|de_num(3) if r.median is not none }}</td><td class="num">{{ r.min|de_num(3) if r.min is not none }}</td><td class="num">{{ r.max|de_num(3) if r.max is not none }}</td><td class="num">{{ r.std|de_num(3) if r.std is not none }}</td>{% endif %}</tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+  {% endif %}
+{% else %}
+<div class="card">{{ empty('Wählen Sie eine Vorlage oder stellen Sie eine Auswertung zusammen.') }}</div>
+{% endif %}
+{% endblock %}

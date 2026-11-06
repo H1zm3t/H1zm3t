@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, empty %}
+{% block title %}MVR / MFR{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('MVR / MFR', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>MVR / MFR</h1><p class="muted">Beispielmodul mit eigenem Datenmodell (ISO 1133)</p></div>{% if user.has('create') %}<a class="btn btn-primary" href="/module/mvr/neu">+ MVR-Prüfung</a>{% endif %}</div>
+<div class="card no-pad">{% if tests %}<table class="table"><thead><tr><th>ID</th><th>Probe</th><th>Bedingung</th><th class="num">n</th><th class="num">MVR Mittel</th><th class="num">s</th><th class="num">MFR</th><th>Datum</th></tr></thead><tbody>
+{% for t in tests %}{% set st = t.stats %}<tr><td><a href="/module/mvr/{{ t.id }}">{{ t.code }}</a></td><td><a href="/proben/{{ t.sample.id }}">{{ t.sample.code }}</a> {{ t.sample.name }}</td><td>{{ t.temperature_c|de_num }} °C / {{ t.load_kg|de_num }} kg</td><td class="num">{{ st.n }}</td><td class="num">{{ st.mean|de_num(2) }}</td><td class="num">{{ st.std|de_num(2) }}</td><td class="num">{{ t.mfr|de_num(2) if t.mfr }}</td><td>{{ t.created_at|de_date }}</td></tr>{% endfor %}
+</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
+{% endblock %}

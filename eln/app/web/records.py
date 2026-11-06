@@ -282,12 +282,17 @@ def _make_routes(d: EntityDef) -> None:
             templates().env.get_template(detail_template)
         except TemplateNotFound:
             detail_template = None
+        detail_after = f"records/after_{key}.html"
+        try:
+            templates().env.get_template(detail_after)
+        except TemplateNotFound:
+            detail_after = None
         status_targets = []
         if d.status_field and key != "experiment":
             spec = next((f for f in d.fields if f.name == d.status_field), None)
             status_targets = [s for s in (spec.options if spec else []) if s != getattr(obj, d.status_field)]
         return ctx.render("records/detail.html", d=d, obj=obj, fields=field_display(ctx, d, obj),
-                          detail_template=detail_template, status_targets=status_targets,
+                          detail_template=detail_template, detail_after=detail_after, status_targets=status_targets,
                           can_edit=ctx.user.has(d.edit_permission), **related_panels(ctx, key, obj), **extra)
 
     @router.get(d.url + "/{obj_id:int}/bearbeiten", name=f"{key}_edit")

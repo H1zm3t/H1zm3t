@@ -1,0 +1,8 @@
+{% from "partials/macros.html" import badge, empty %}
+<div class="card"><div class="card-head"><h2 class="card-title">Chargen</h2>{% if user.has('manage_master_data') %}<a class="btn btn-sm" href="/chargen/neu?material_id={{ obj.id }}">+ Charge</a>{% endif %}</div>
+{% if batches %}<table class="table"><thead><tr><th>ID</th><th>Charge</th><th>Eingang</th><th>MHD</th><th>Lagerort</th><th>Status</th></tr></thead><tbody>{% for b in batches %}<tr class="{% if b.expiry_date and b.expiry_date < today() %}row-danger{% endif %}"><td><a href="/chargen/{{ b.id }}">{{ b.code }}</a></td><td>{{ b.batch_number }}</td><td>{{ b.received_date|de_date }}</td><td>{{ b.expiry_date|de_date }}</td><td>{{ b.storage_location or '' }}</td><td>{{ badge(b.status) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
+<div class="grid-2">
+<div class="card"><h2 class="card-title">Verwendet in Rezepturen</h2>{% if recipes %}<ul class="link-list">{% for r in recipes %}<li><a href="/rezepturen/{{ r.id }}">{{ r.label }}</a> {{ badge(r.status) }}</li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>
+<div class="card"><h2 class="card-title">Verwendet in Versuchen</h2>{% if experiments %}<ul class="link-list">{% for e in experiments %}<li><a href="/versuche/{{ e.id }}">{{ e.label }}</a> {{ badge(e.status) }}</li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>
+</div>
+<p class="muted small">Sicherheitsdatenblatt und Analysenzertifikat bitte unten als Anhang mit der entsprechenden Kategorie hochladen.</p>

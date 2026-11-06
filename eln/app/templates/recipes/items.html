@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf, reason_field %}
+{% block title %}Positionen {{ recipe.code }}{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Rezepturen', '/rezepturen'), (recipe.code ~ ' Rev. ' ~ recipe.revision, '/rezepturen/' ~ recipe.id|string), ('Positionen', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Rezeptur {{ recipe.code }} Rev. {{ recipe.revision }} – Positionen</h1></div>
+{% if errors %}<div class="alert alert-error"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<form method="post" class="card form" data-recipe-editor>
+  {{ csrf() }}
+  <script type="application/json" data-batch-map>{{ batch_map|tojson }}</script>
+  <div class="table-scroll">
+  <table class="table table-edit" data-rows="item">
+    <thead><tr><th>Material <em class="req">*</em></th><th>Charge</th><th>Funktion</th><th>Soll</th><th>Einheit</th><th>Ist</th><th>Gew.-%</th><th>Tol.</th><th>Bemerkung</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}{% set i = loop.index0 %}
+    <tr data-row>
+      <td><select name="item-{{ i }}-material_id" data-material><option value="">–</option>{% for m in materials %}<option value="{{ m.id }}" {% if m.id|string == r.material_id|string %}selected{% endif %}>{{ m.label }}</option>{% endfor %}</select></td>
+      <td><select name="item-{{ i }}-batch_id" data-batch data-selected="{{ r.batch_id }}"><option value="">–</option></select></td>
+      <td><input name="item-{{ i }}-function" value="{{ r.function }}"></td>
+      <td><input name="item-{{ i }}-target_amount" value="{{ r.target_amount }}" inputmode="decimal" class="w-num" data-amount></td>
+      <td><select name="item-{{ i }}-unit" class="w-unit">{% for u in units %}<option {% if u == r.unit %}selected{% endif %}>{{ u }}</option>{% endfor %}</select></td>
+      <td><input name="item-{{ i }}-actual_amount" value="{{ r.actual_amount }}" inputmode="decimal" class="w-num"></td>
+      <td><input name="item-{{ i }}-weight_percent" value="{{ r.weight_percent }}" inputmode="decimal" class="w-num" data-percent></td>
+      <td><input name="item-{{ i }}-tolerance" value="{{ r.tolerance }}" inputmode="decimal" class="w-num"></td>
+      <td><input name="item-{{ i }}-remark" value="{{ r.remark }}"></td>
+      <td><button type="button" class="icon-btn" data-remove-row title="Zeile entfernen">✕</button></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <template><tr data-row>
+      <td><select name="item-__i__-material_id" data-material><option value="">–</option>{% for m in materials %}<option value="{{ m.id }}">{{ m.label }}</option>{% endfor %}</select></td>
+      <td><select name="item-__i__-batch_id" data-batch><option value="">–</option></select></td>
+      <td><input name="item-__i__-function"></td>
+      <td><input name="item-__i__-target_amount" inputmode="decimal" class="w-num" data-amount></td>
+      <td><select name="item-__i__-unit" class="w-unit">{% for u in units %}<option {% if u == 'kg' %}selected{% endif %}>{{ u }}</option>{% endfor %}</select></td>
+      <td><input name="item-__i__-actual_amount" inputmode="decimal" class="w-num"></td>
+      <td><input name="item-__i__-weight_percent" inputmode="decimal" class="w-num" data-percent></td>
+      <td><input name="item-__i__-tolerance" inputmode="decimal" class="w-num"></td>
+      <td><input name="item-__i__-remark"></td>
+      <td><button type="button" class="icon-btn" data-remove-row title="Zeile entfernen">✕</button></td>
+    </tr></template>
+    <tfoot><tr><th colspan="6">Live-Summe der Anteile</th><th class="num"><span data-percent-sum>0</span> %</th><th colspan="3"><span data-sum-hint></span></th></tr></tfoot>
+  </table>
+  </div>
+  <button type="button" class="btn btn-sm" data-add-row="item">+ Position</button>
+  <label class="check"><input type="checkbox" name="calc_percent" value="1"> Gew.-% beim Speichern aus den Sollmengen berechnen</label>
+  <div class="form-grid">{{ reason_field(reason_required) }}</div>
+  <div class="form-actions sticky-actions"><a class="btn" href="/rezepturen/{{ recipe.id }}">Abbrechen</a><button class="btn btn-primary" type="submit">Speichern</button></div>
+</form>
+{% endblock %}

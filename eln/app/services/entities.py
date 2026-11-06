@@ -7,7 +7,7 @@ eigenen Services.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -16,7 +16,7 @@ from ..core import vocab
 from ..core.forms import FieldSpec as F
 from ..models import (
     Batch, Device, Experiment, ExperimentSeries, Material, Measurement, Method, Order, Project, Recipe,
-    Sample, Task, User, order_participants,
+    Sample, Task, User,
 )
 
 
@@ -354,6 +354,8 @@ def entity_url(entity_type: str, entity_id: int) -> str:
         return f"{ENTITY_DEFS[entity_type].url}/{entity_id}"
     if entity_type == "user":
         return f"/admin/benutzer/{entity_id}"
+    if entity_type == "module_record":
+        return f"/moduldatensatz/{entity_id}"
     reg = get_registry()
     for m in reg.all():
         resolver = getattr(m, "entity_url", None)

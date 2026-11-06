@@ -1,0 +1,19 @@
+{% from "partials/macros.html" import badge %}
+<div class="card">
+  <div class="card-head">
+    <div class="progress-wrap"><div class="muted small">Fortschritt (freigegebene Versuche): {{ progress }} %</div><div class="progress"><div class="progress-bar" style="width: {{ progress }}%"></div></div></div>
+    <div class="actions">
+      {% if user.has('create') %}
+      <a class="btn btn-primary" href="/versuche/neu?order_id={{ obj.id }}">+ Versuch</a>
+      <a class="btn" href="/proben/neu?order_id={{ obj.id }}">+ Probe</a>
+      <a class="btn" href="/versuchsreihen/neu?order_id={{ obj.id }}">+ Versuchsreihe</a>
+      <a class="btn" href="/rezepturen/neu?order_id={{ obj.id }}">+ Rezeptur</a>
+      {% endif %}
+      {% if user.has('export') %}
+      <div class="dropdown"><button class="btn" type="button" data-dropdown>Auftragsdossier</button>
+        <div class="dropdown-menu dropdown-right"><a href="/auftraege/{{ obj.id }}/dossier.pdf" target="_blank" rel="noopener">PDF</a><a href="/auftraege/{{ obj.id }}/dossier.json">JSON</a><a href="/auftraege/{{ obj.id }}/dossier.zip">Komplettexport (ZIP)</a></div></div>
+      {% endif %}
+    </div>
+  </div>
+  {% if obj.due_date and obj.due_date < today() and obj.status not in ('abgeschlossen','storniert','archiviert') %}<div class="alert alert-warning">Der gewünschte Termin ({{ obj.due_date|de_date }}) ist überschritten.</div>{% endif %}
+</div>

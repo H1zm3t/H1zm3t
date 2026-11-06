@@ -1,0 +1,9 @@
+<div class="card">
+  <div class="card-head">
+    <nav class="hierarchy">Hierarchie: {% if obj.order %}<a href="/auftraege/{{ obj.order.id }}">{{ obj.order.code }}</a> → {% endif %}{% for a in ancestors %}<a href="/proben/{{ a.id }}">{{ a.code }} {{ a.name }}</a> → {% endfor %}<strong>{{ obj.code }} {{ obj.name }}</strong></nav>
+    <div class="actions">{% if user.has('create') %}
+      <a class="btn btn-sm" href="/proben/neu?parent_id={{ obj.id }}">+ Unterprobe</a>
+      <a class="btn btn-sm" href="/messdaten/neu?sample_id={{ obj.id }}&experiment_id={{ obj.experiment_id or '' }}">+ Messdaten</a>
+    {% endif %}</div>
+  </div>
+</div>

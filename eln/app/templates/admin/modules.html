@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf, badge %}
+{% block title %}Module{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Module', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Modulverwaltung</h1><p class="muted">Fachmodule erweitern den ELN-Kern. Deaktivierte Module sind ausgeblendet; ihre Daten bleiben erhalten.</p></div></div>
+<div class="module-grid">
+{% for m in modules %}
+<div class="card module-card {% if m.key in enabled %}is-on{% endif %}">
+  <div class="card-head"><h2 class="card-title">{{ m.name }}</h2>{{ badge('aktiv' if m.key in enabled else 'inaktiv') }}</div>
+  <p>{{ m.description }}</p>
+  <p class="muted small">Schlüssel <code>{{ m.key }}</code> · Version {{ m.version }} · {{ m.category }} · Reifegrad: <strong>{{ m.maturity }}</strong><br>
+  Verknüpft mit: {% for l in m.links_to %}{{ l|type_label }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+  <form method="post" action="/admin/module/{{ m.key }}" data-confirm="Modul »{{ m.name }}« {{ 'deaktivieren' if m.key in enabled else 'aktivieren' }}?">{{ csrf() }}
+    <input type="hidden" name="enabled" value="{{ '0' if m.key in enabled else '1' }}">
+    <button class="btn btn-sm {% if m.key not in enabled %}btn-primary{% endif %}">{{ 'Deaktivieren' if m.key in enabled else 'Aktivieren' }}</button>
+  </form>
+</div>
+{% endfor %}
+</div>
+<p class="muted small">Neue Module anlegen: <code>python manage.py new-module &lt;schluessel&gt;</code> – siehe docs/PLUGIN_ENTWICKLUNG.md.</p>
+{% endblock %}

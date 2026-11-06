@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs %}
+{% block title %}Rezepturvergleich{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Rezepturen', '/rezepturen'), ('Vergleich', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Rezepturen vergleichen</h1></div>
+<form method="get" class="card form">
+  <label class="field"><span>Rezepturen (mind. zwei, die erste ist die Referenz)</span>
+  <select name="ids" multiple size="8" data-multi>{% for r in all_recipes %}<option value="{{ r.id }}" {% if r.id in ids %}selected{% endif %}>{{ r.label }} ({{ r.status }})</option>{% endfor %}</select></label>
+  <div class="form-actions"><button class="btn btn-primary" type="submit">Vergleichen</button></div>
+</form>
+{% if result %}
+<div class="card">
+  <p class="legend"><span class="diff-up">höher als Referenz</span> <span class="diff-down">niedriger</span> <span class="diff-missing">nicht enthalten</span> <span class="diff-new">neu</span></p>
+  <div class="table-scroll"><table class="table compare">
+    <thead><tr><th>Material</th>{% for r in result.recipes %}<th class="num"><a href="/rezepturen/{{ r.id }}">{{ r.code }} Rev. {{ r.revision }}</a><div class="muted small">{{ r.name }}</div></th>{% endfor %}</tr></thead>
+    <tbody>{% for row in result.rows %}<tr class="{% if row.differs %}row-diff{% endif %}"><td>{{ row.material.label }}</td>{% for c in row.cells %}<td class="num {{ c.cls }}">{% if c.value is not none %}{{ c.value|de_num(3) }}{% if c.delta and loop.index > 1 %} <small>({{ '%+.3f'|format(c.delta)|replace('.', ',') }})</small>{% endif %}{% else %}–{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    <tfoot><tr><th>Summe Gew.-%</th>{% for t in result.totals %}<th class="num">{{ t|de_num(3) }}</th>{% endfor %}</tr></tfoot>
+  </table></div>
+</div>
+{% endif %}
+{% endblock %}

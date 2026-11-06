@@ -1,0 +1,105 @@
+{% from "partials/macros.html" import badge, csrf, empty %}
+<div class="tabs" data-tabs>
+  <div class="tab-bar" role="tablist">
+    <button type="button" class="tab active" data-tab="anhaenge">Anhänge <span class="count">{{ attachments|length }}</span></button>
+    <button type="button" class="tab" data-tab="kommentare">Kommentare <span class="count">{{ comments|length }}</span></button>
+    <button type="button" class="tab" data-tab="aufgaben">Aufgaben <span class="count">{{ tasks|length }}</span></button>
+    <button type="button" class="tab" data-tab="historie">Historie <span class="count">{{ history|length }}</span></button>
+  </div>
+
+  <section class="tab-panel active" id="anhaenge" data-panel="anhaenge">
+    {% if user.has('create') %}
+      {% if upload_locked %}
+      <div class="alert alert-info">{{ upload_locked }}</div>
+      {% else %}
+      <form class="upload-form" method="post" action="/anhaenge/upload" enctype="multipart/form-data" data-upload>
+        {{ csrf() }}
+        <input type="hidden" name="entity_type" value="{{ entity_type }}">
+        <input type="hidden" name="entity_id" value="{{ obj.id }}">
+        <div class="dropzone" data-dropzone>
+          <span class="ico ico-upload big"></span>
+          <p><strong>Dateien hierher ziehen</strong> oder <label class="link">auswählen<input type="file" name="files" multiple hidden data-file-input></label></p>
+          <p class="muted small">Bilder, PDF, Excel, Word, CSV, Text, JSON, Messdateien · ausführbare Dateien sind gesperrt</p>
+          <ul class="file-queue" data-file-queue></ul>
+        </div>
+        <div class="form-grid compact">
+          <div class="field w-third"><label>Kategorie</label><select name="category"><option value="">– automatisch –</option>{% for c in attachment_categories %}<option>{{ c }}</option>{% endfor %}</select></div>
+          <div class="field w-third"><label>Vertraulichkeit</label><select name="confidentiality">{% for c in confidentiality_levels %}<option {% if c == 'intern' %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+          <div class="field w-third"><label>Bildunterschrift</label><input name="caption" maxlength="300"></div>
+          <div class="field w-full"><label>Beschreibung</label><input name="description" maxlength="1000"></div>
+        </div>
+        <div class="progress" hidden data-progress><div class="progress-bar" data-progress-bar></div></div>
+        <div class="form-actions"><button type="submit" class="btn btn-primary">Hochladen</button></div>
+      </form>
+      {% endif %}
+    {% endif %}
+    {% if images %}
+    <h3 class="sub">Bildergalerie</h3>
+    <div class="gallery">
+      {% for a in images %}
+      <figure class="gallery-item">
+        <a href="/anhaenge/{{ a.id }}/vorschau" data-lightbox data-caption="{{ a.caption or a.original_filename }}"><img src="/anhaenge/{{ a.id }}/vorschau" alt="{{ a.caption or a.original_filename }}" loading="lazy"></a>
+        <figcaption>{{ a.caption or a.original_filename }}</figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if attachments %}
+    <table class="table">
+      <thead><tr><th>Datei</th><th>Kategorie</th><th>Version</th><th>Größe</th><th>Hochgeladen</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for a in attachments %}
+      <tr class="{% if a.status != 'aktiv' %}row-muted{% endif %}">
+        <td><a href="/anhaenge/{{ a.id }}">{{ a.original_filename }}</a>{% if a.description %}<div class="muted small">{{ a.description }}</div>{% endif %}</td>
+        <td>{{ a.category or a.file_type }}</td>
+        <td>{{ a.version }}</td>
+        <td>{{ a.size_bytes|filesize }}</td>
+        <td>{{ a.created_at|de_datetime }}<div class="muted small">{{ a.created_by.full_name if a.created_by else '' }}</div></td>
+        <td>{{ badge(a.status) }} {% if a.confidentiality in ('vertraulich', 'streng vertraulich') %}{{ badge(a.confidentiality) }}{% endif %}</td>
+        <td class="nowrap">
+          {% if a.is_image or a.is_pdf %}<a class="btn btn-sm" href="/anhaenge/{{ a.id }}/vorschau" target="_blank" rel="noopener">Vorschau</a>{% endif %}
+          <a class="btn btn-sm" href="/anhaenge/{{ a.id }}/download">Download</a>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}{{ empty('Noch keine Anhänge.') }}{% endif %}
+  </section>
+
+  <section class="tab-panel" id="kommentare" data-panel="kommentare">
+    {% for c in comments %}
+    <div class="comment"><div class="comment-head"><strong>{{ c.created_by.full_name if c.created_by else 'System' }}</strong> <span class="muted">{{ c.created_at|de_datetime }}</span></div><div class="pre">{{ c.text }}</div></div>
+    {% else %}{{ empty('Noch keine Kommentare.') }}{% endfor %}
+    <form method="post" action="/kommentare" class="form">
+      {{ csrf() }}<input type="hidden" name="entity_type" value="{{ entity_type }}"><input type="hidden" name="entity_id" value="{{ obj.id }}">
+      <label class="field"><span>Neuer Kommentar</span><textarea name="text" rows="3" required maxlength="10000"></textarea></label>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Kommentieren</button></div>
+    </form>
+  </section>
+
+  <section class="tab-panel" id="aufgaben" data-panel="aufgaben">
+    {% if user.has('create') %}<p><a class="btn btn-sm btn-primary" href="/aufgaben/neu?entity_type={{ entity_type }}&entity_id={{ obj.id }}">+ Aufgabe zu diesem Datensatz</a></p>{% endif %}
+    {% if tasks %}
+    <table class="table"><thead><tr><th>Aufgabe</th><th>Zuständig</th><th>Fällig</th><th>Status</th></tr></thead><tbody>
+    {% for t in tasks %}<tr class="{% if t.is_overdue %}row-danger{% endif %}"><td><a href="/aufgaben/{{ t.id }}">{{ t.code }} – {{ t.title }}</a></td><td>{{ t.assignee.full_name if t.assignee else '' }}</td><td>{{ t.due_date|de_date }}</td><td>{{ badge(t.status) }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% else %}{{ empty('Keine Aufgaben.') }}{% endif %}
+  </section>
+
+  <section class="tab-panel" id="historie" data-panel="historie">
+    {% if approvals %}
+    <h3 class="sub">Prüfungen und Freigaben</h3>
+    <table class="table"><thead><tr><th>Zeitpunkt</th><th>Schritt</th><th>Entscheidung</th><th>Person</th><th>Rev.</th><th>Kommentar</th><th>Snapshot</th></tr></thead><tbody>
+    {% for r in approvals %}<tr><td>{{ r.timestamp|de_datetime }}</td><td>{{ r.step }}</td><td>{{ badge(r.decision) }}</td><td>{{ r.user.full_name }}</td><td>{{ r.revision }}</td><td>{{ r.comment or '' }}</td><td>{% if r.snapshot %}<a href="/versuche/{{ obj.id }}/snapshot/{{ r.snapshot.id }}" title="{{ r.snapshot.sha256 }}">{{ r.snapshot.sha256[:12] }}…</a>{% endif %}</td></tr>{% endfor %}
+    </tbody></table>
+    {% endif %}
+    <h3 class="sub">Änderungsverlauf</h3>
+    {% if history %}
+    <table class="table table-compact"><thead><tr><th>Zeitpunkt</th><th>Benutzer</th><th>Aktion</th><th>Feld</th><th>Alt</th><th>Neu</th><th>Grund</th><th>Vers.</th></tr></thead><tbody>
+    {% for h in history %}<tr><td class="nowrap">{{ h.timestamp|de_datetime }}</td><td>{{ h.username }}</td><td>{{ h.action|action_label }}</td><td>{{ h.field or '' }}</td><td class="pre clip">{{ h.old_value or '' }}</td><td class="pre clip">{{ h.new_value or '' }}</td><td>{{ h.reason or '' }}</td><td>{{ h.record_version or '' }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% else %}{{ empty() }}{% endif %}
+  </section>
+</div>
+<dialog id="lightbox" class="dialog lightbox"><form method="dialog"><img alt="" data-lightbox-img><p data-lightbox-caption></p><div class="form-actions"><button class="btn">Schließen</button></div></form></dialog>

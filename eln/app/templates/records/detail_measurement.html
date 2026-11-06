@@ -1,0 +1,21 @@
+{% from "partials/macros.html" import empty %}
+<div class="grid-2">
+  <div class="card">
+    <h2 class="card-title">Statistische Kennwerte</h2>
+    <div class="stats">
+      <div class="stat"><span>Anzahl</span><strong>{{ stats.n }}</strong></div>
+      <div class="stat"><span>Mittelwert</span><strong>{{ stats.mean|de_num(3) if stats.mean is not none else '–' }}</strong></div>
+      <div class="stat"><span>Median</span><strong>{{ stats.median|de_num(3) if stats.median is not none else '–' }}</strong></div>
+      <div class="stat"><span>Std.-Abw.</span><strong>{{ stats.std|de_num(3) if stats.std is not none else '–' }}</strong></div>
+      <div class="stat"><span>Minimum</span><strong>{{ stats.min|de_num(3) if stats.min is not none else '–' }}</strong></div>
+      <div class="stat"><span>Maximum</span><strong>{{ stats.max|de_num(3) if stats.max is not none else '–' }}</strong></div>
+    </div>
+    <p class="muted small">Einheit: {{ obj.unit or '–' }} · Quelle: {{ obj.source }}</p>
+    {% if obj.meta %}<h3 class="sub">Metadaten</h3><dl class="kv-grid">{% for k, v in obj.meta.items() %}<div class="kv"><dt>{{ k }}</dt><dd>{{ v }}</dd></div>{% endfor %}</dl>{% endif %}
+  </div>
+  <div class="card"><h2 class="card-title">Verlauf</h2><div class="chart-box"><canvas data-chart="measurement"></canvas></div><script type="application/json" data-chart-data="measurement">{{ chart_json|safe }}</script></div>
+</div>
+<div class="card"><h2 class="card-title">Messwerte</h2>
+{% if obj.values %}<table class="table table-compact"><thead><tr><th>#</th><th class="num">{{ obj.x_name or 'x' }}{% if obj.x_unit %} [{{ obj.x_unit }}]{% endif %}</th><th class="num">{{ obj.property_name }}{% if obj.unit %} [{{ obj.unit }}]{% endif %}</th><th>Bezeichnung</th></tr></thead><tbody>
+{% for v in obj.values %}<tr><td>{{ loop.index }}</td><td class="num">{{ v.x_value|de_num }}</td><td class="num">{{ v.value|de_num }}</td><td>{{ v.label or '' }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('Keine Werte erfasst.') }}{% endif %}
+</div>

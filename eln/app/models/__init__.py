@@ -17,6 +17,9 @@ from .support import (  # noqa: F401
 )
 from .user import Role, User, UserSession, user_roles  # noqa: F401
 from .work import (  # noqa: F401
+    experiment_batches,
+    experiment_devices,
+    experiment_materials,
     Experiment,
     ExperimentSeries,
     Measurement,

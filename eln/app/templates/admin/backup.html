@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf, badge, empty %}
+{% block title %}Datensicherung{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Datensicherung', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Datensicherung</h1><p class="muted">Ziel: <code>{{ settings.backup_dir }}</code></p></div>
+<form method="post" action="/admin/sicherung/erstellen" data-confirm="Jetzt eine vollständige Sicherung erstellen?">{{ csrf() }}<button class="btn btn-primary">Sicherung jetzt erstellen</button></form></div>
+{% if settings.backup_dir.is_relative_to(settings.data_dir) %}<div class="alert alert-warning">Das Sicherungsziel liegt innerhalb des Datenverzeichnisses. Empfehlung: ELN_BACKUP_DIR in .env auf ein anderes Laufwerk oder Netzlaufwerk setzen.</div>{% endif %}
+<div class="card"><h2 class="card-title">Vorhandene Sicherungen</h2>
+{% if files %}<table class="table"><thead><tr><th>Datei</th><th>Größe</th><th>Datum</th><th></th></tr></thead><tbody>
+{% for f in files %}<tr><td><code>{{ f.filename }}</code></td><td>{{ f.size|filesize }}</td><td>{{ f.modified|de_datetime }}</td><td class="nowrap">
+  <form method="post" action="/admin/sicherung/pruefen" class="inline">{{ csrf() }}<input type="hidden" name="filename" value="{{ f.filename }}"><button class="btn btn-sm">Prüfen</button></form>
+  {% if is_admin %}<a class="btn btn-sm" href="/admin/sicherung/download/{{ f.filename }}">Download</a>
+  <button type="button" class="btn btn-sm btn-danger" data-open-dialog="restore-dialog" data-set-field="filename" data-set-value="{{ f.filename }}">Wiederherstellen</button>{% endif %}
+</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('Noch keine Sicherungen.') }}{% endif %}</div>
+<dialog id="restore-dialog" class="dialog"><form method="post" action="/admin/sicherung/wiederherstellen">{{ csrf() }}
+  <input type="hidden" name="filename" data-field="filename">
+  <h3>⚠ Wiederherstellung</h3>
+  <p>Datenbank und Dateiablage werden durch den Stand der Sicherung <strong data-show="filename"></strong> <strong>ersetzt</strong>. Alle Änderungen seit dieser Sicherung gehen verloren. Der aktuelle Stand wird vorher automatisch gesichert. Alle Benutzer werden abgemeldet.</p>
+  <p>Informieren Sie vorher alle Anwender. Zur Bestätigung <strong>WIEDERHERSTELLEN</strong> eingeben:</p>
+  <input name="confirm" required autocomplete="off" pattern="WIEDERHERSTELLEN">
+  <div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-danger">Wiederherstellen</button></div>
+</form></dialog>
+<div class="card"><h2 class="card-title">Sicherungsprotokoll</h2>
+{% if log %}<table class="table table-compact"><thead><tr><th>Zeit</th><th>Art</th><th>Benutzer</th><th>Datei</th><th>Dateien</th><th>Status</th><th>Meldung</th></tr></thead><tbody>
+{% for e in log %}<tr><td>{{ e.zeit|de_datetime }}</td><td>{{ e.art }}</td><td>{{ e.benutzer }}</td><td><code>{{ e.filename }}</code></td><td>{{ e.file_count or '' }}</td><td>{{ badge(e.status) }}</td><td>{{ e.message }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
+{% endblock %}

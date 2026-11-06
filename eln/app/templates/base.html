@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<title>{% block title %}{{ APP_NAME }}{% endblock %} · ELN</title>
+<link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/vendor/tabulator/tabulator_simple.min.css">
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="/static/js/theme.js"></script>
+</head>
+<body>
+{% set nav = [
+  ("Übersicht", [("/", "Dashboard", "home", "view"), ("/aufgaben?offen=1", "Aufgaben", "check", "view"), ("/suche", "Suche", "search", "view"), ("/auswertungen", "Auswertungen", "chart", "view")]),
+  ("Arbeit", [("/projekte", "Projekte", "folder", "view"), ("/auftraege", "Aufträge", "clipboard", "view"), ("/versuchsreihen", "Versuchsreihen", "layers", "view"), ("/versuche", "Versuche", "flask", "view"), ("/rezepturen", "Rezepturen", "list", "view"), ("/proben", "Proben", "vial", "view"), ("/messdaten", "Messdaten", "chart", "view")]),
+  ("Stammdaten", [("/materialien", "Materialien", "box", "view"), ("/chargen", "Chargen", "tag", "view"), ("/geraete", "Geräte", "tool", "view"), ("/methoden", "Methoden", "book", "view")]),
+] %}
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="/"><span class="brand-mark">ELN</span><span class="brand-text">{{ company_name }}</span></a>
+    <nav>
+      {% for section, items in nav %}
+      <div class="nav-section">{{ section }}</div>
+      {% for url, label, icon, perm in items %}{% if user.has(perm) %}
+      {% set base_url = url.split('?')[0] %}
+      <a href="{{ url }}" class="nav-link {% if (base_url == '/' and current_path == '/') or (base_url != '/' and current_path.startswith(base_url)) %}active{% endif %}"><span class="ico ico-{{ icon }}"></span>{{ label }}</a>
+      {% endif %}{% endfor %}
+      {% endfor %}
+      {% if module_nav %}
+      <div class="nav-section">Fachmodule</div>
+      {% for entry in module_nav %}
+      <a href="{{ entry.url }}" class="nav-link {% if current_path.startswith(entry.url) %}active{% endif %}"><span class="ico ico-module"></span>{{ entry.label }}</a>
+      {% endfor %}
+      {% endif %}
+      {% if user.has('import') or user.has('export') or user.has('view_audit') or user.has('manage_users') or user.has('manage_settings') or user.has('backup') %}
+      <div class="nav-section">Verwaltung</div>
+      {% if user.has('import') %}<a href="/import" class="nav-link {% if current_path.startswith('/import') %}active{% endif %}"><span class="ico ico-upload"></span>Import</a>{% endif %}
+      {% if user.has('export') %}<a href="/export" class="nav-link {% if current_path == '/export' %}active{% endif %}"><span class="ico ico-download"></span>Export</a>{% endif %}
+      {% if user.has('view_audit') %}<a href="/audit" class="nav-link {% if current_path.startswith('/audit') %}active{% endif %}"><span class="ico ico-shield"></span>Audit Trail</a>{% endif %}
+      {% if user.has('manage_users') %}<a href="/admin/benutzer" class="nav-link {% if current_path.startswith('/admin/benutzer') or current_path.startswith('/admin/rollen') %}active{% endif %}"><span class="ico ico-users"></span>Benutzer &amp; Rollen</a>{% endif %}
+      {% if user.has('manage_settings') %}
+      <a href="/admin/einstellungen" class="nav-link {% if current_path.startswith('/admin/einstellungen') %}active{% endif %}"><span class="ico ico-gear"></span>Einstellungen</a>
+      <a href="/admin/module" class="nav-link {% if current_path.startswith('/admin/module') %}active{% endif %}"><span class="ico ico-module"></span>Module</a>
+      <a href="/admin/system" class="nav-link {% if current_path.startswith('/admin/system') %}active{% endif %}"><span class="ico ico-info"></span>System</a>
+      {% endif %}
+      {% if user.has('backup') %}<a href="/admin/sicherung" class="nav-link {% if current_path.startswith('/admin/sicherung') %}active{% endif %}"><span class="ico ico-save"></span>Datensicherung</a>{% endif %}
+      {% endif %}
+    </nav>
+    <div class="sidebar-foot">{{ APP_NAME }} {{ APP_VERSION }}</div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn" type="button" data-toggle-sidebar title="Menü"><span class="ico ico-menu"></span></button>
+      <form class="global-search" action="/suche" method="get" role="search">
+        <span class="ico ico-search"></span>
+        <input type="search" name="q" placeholder="Suchen: Auftrag, Versuch, Material, Charge, Datei …" aria-label="Globale Suche" value="{{ request.query_params.get('q', '') if current_path == '/suche' else '' }}">
+      </form>
+      <div class="topbar-actions">
+        {% if user.has('create') %}
+        <div class="dropdown">
+          <button class="btn btn-primary btn-sm" type="button" data-dropdown>+ Neu</button>
+          <div class="dropdown-menu">
+            <a href="/auftraege/neu">Auftrag</a><a href="/versuche/neu">Versuch</a><a href="/proben/neu">Probe</a>
+            <a href="/rezepturen/neu">Rezeptur</a><a href="/messdaten/neu">Messdatensatz</a><a href="/aufgaben/neu">Aufgabe</a>
+          </div>
+        </div>
+        {% endif %}
+        <button class="icon-btn" type="button" data-theme-toggle title="Hell/Dunkel umschalten"><span class="ico ico-moon"></span></button>
+        <div class="dropdown">
+          <button class="user-btn" type="button" data-dropdown><span class="avatar">{{ (user.short_name or user.full_name[:2])|upper }}</span><span class="user-name">{{ user.full_name }}</span></button>
+          <div class="dropdown-menu dropdown-right">
+            <div class="dropdown-info">{{ user.username }}<br><small>{% for r in user.roles %}{{ r.name }}{% if not loop.last %}, {% endif %}{% endfor %}</small></div>
+            <a href="/konto">Passwort ändern</a>
+            <a href="/aufgaben?meine=1">Meine Aufgaben</a>
+            <form method="post" action="/logout"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="dropdown-btn">Abmelden</button></form>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="content">
+      {% block breadcrumbs %}{% endblock %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+<div class="toasts" id="toasts">
+  {% for f in flashes %}<div class="toast toast-{{ f.kind }}" role="status">{{ f.message }}</div>{% endfor %}
+</div>
+<dialog id="confirm-dialog" class="dialog">
+  <form method="dialog">
+    <h3 data-confirm-title>Bitte bestätigen</h3>
+    <p data-confirm-text></p>
+    <div class="form-actions"><button value="cancel" class="btn">Abbrechen</button><button value="ok" class="btn btn-primary" data-confirm-ok>Bestätigen</button></div>
+  </form>
+</dialog>
+<script src="/static/vendor/tabulator/tabulator.min.js"></script>
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script src="/static/js/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

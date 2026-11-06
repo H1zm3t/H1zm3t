@@ -1,0 +1,2 @@
+{% if ctx.tests %}<table class="table table-compact"><tbody>{% for t in ctx.tests %}<tr><td><a href="/module/mvr/{{ t.id }}">{{ t.code }}</a></td><td>{{ t.sample.code }}</td><td>{{ t.temperature_c|de_num }} °C / {{ t.load_kg|de_num }} kg</td><td class="num">{{ t.stats.mean|de_num(2) }} cm³/10 min</td></tr>{% endfor %}</tbody></table>{% else %}<p class="empty">Keine MVR-Prüfungen.</p>{% endif %}
+{% if user.has('create') %}<a class="btn btn-sm" href="/module/mvr/neu">+ MVR-Prüfung</a>{% endif %}

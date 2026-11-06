@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs %}
+{% block title %}Export{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Export', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Datenexport</h1></div>
+<div class="card"><table class="table"><thead><tr><th>Datensatztyp</th><th>Excel</th><th>CSV (Semikolon, Dezimalkomma)</th><th>JSON (für Access/Schnittstellen)</th></tr></thead><tbody>
+{% for k, d in defs.items() %}<tr><td>{{ d.plural }}</td><td><a href="{{ d.url }}/export.xlsx">.xlsx</a></td><td><a href="{{ d.url }}/export.csv">.csv</a></td><td><a href="{{ d.url }}/export.json">.json</a></td></tr>{% endfor %}
+</tbody></table>
+<p class="muted small">Vollständige Dossiers (PDF, JSON, ZIP inkl. Anhänge) erhalten Sie auf der jeweiligen Versuchs- bzw. Auftragsseite. Alle Exporte werden im Audit Trail protokolliert.</p></div>
+{% endblock %}

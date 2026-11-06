@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, badge %}
+{% block title %}Benutzer{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Benutzer', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Benutzer</h1><div class="actions"><a class="btn" href="/admin/rollen">Rollen &amp; Rechte</a><a class="btn btn-primary" href="/admin/benutzer/neu">+ Benutzer</a></div></div>
+<div class="card no-pad"><table class="table"><thead><tr><th>Benutzername</th><th>Name</th><th>Rollen</th><th>Letzte Anmeldung</th><th>Status</th></tr></thead><tbody>
+{% for u in users %}<tr><td><a href="/admin/benutzer/{{ u.id }}">{{ u.username }}</a></td><td>{{ u.full_name }}</td><td>{% for r in u.roles %}<span class="chip">{{ r.name }}</span>{% endfor %}</td><td>{{ u.last_login|de_datetime }}</td>
+<td>{% if not u.is_active %}{{ badge('deaktiviert') }}{% elif u.locked_until and u.locked_until > now %}{{ badge('gesperrt') }}{% else %}{{ badge('aktiv') }}{% endif %}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}
