@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import badge, empty %}
+{% from "partials/macros.html" import badge, empty with context %}
 <div class="grid-2">
 <div class="card"><h2 class="card-title">Geräte</h2>{% if obj.devices %}<ul class="link-list">{% for d in obj.devices %}<li><a href="/geraete/{{ d.id }}">{{ d.label }}</a> {{ badge(d.status) }}</li>{% endfor %}</ul>{% else %}{{ empty('Keine Geräte verknüpft (Verknüpfung in der Gerätemaske).') }}{% endif %}</div>
 <div class="card"><h2 class="card-title">Versuche mit dieser Methode</h2>{% if experiments %}<ul class="link-list">{% for e in experiments %}<li><a href="/versuche/{{ e.id }}">{{ e.label }}</a> {{ badge(e.status) }}</li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>

@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import badge, empty %}
+{% from "partials/macros.html" import badge, empty with context %}
 <div class="grid-2">
 <div class="card"><h2 class="card-title">Abgeleitete Proben</h2>
 {% if descendants %}<ul class="tree">{% for depth, s in descendants %}<li style="padding-left: {{ depth * 1.4 }}rem">↳ <a href="/proben/{{ s.id }}">{{ s.code }}</a> {{ s.name }} <span class="muted">({{ s.sample_type }})</span> {{ badge(s.status) }}</li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>

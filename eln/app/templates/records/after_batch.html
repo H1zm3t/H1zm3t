@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import badge, empty %}
+{% from "partials/macros.html" import badge, empty with context %}
 {% if obj.expiry_date and obj.expiry_date < today() %}<div class="alert alert-warning">Mindesthaltbarkeit am {{ obj.expiry_date|de_date }} überschritten.</div>{% endif %}
 <div class="grid-2">
 <div class="card"><h2 class="card-title">Proben aus dieser Charge</h2>{% if samples %}<ul class="link-list">{% for s in samples %}<li><a href="/proben/{{ s.id }}">{{ s.label }}</a></li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>

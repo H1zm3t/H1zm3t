@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, pagination, badge %}
+{% from "partials/macros.html" import crumbs, pagination, badge with context %}
 {% block title %}Audit Trail{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Audit Trail', none)]) }}{% endblock %}
 {% block content %}

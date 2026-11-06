@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, badge, csrf, pagination, empty %}
+{% from "partials/macros.html" import crumbs, badge, csrf, pagination, empty with context %}
 {% block title %}Suche{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Suche', none)]) }}{% endblock %}
 {% block content %}

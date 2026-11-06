@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, field, csrf, reason_field %}
+{% from "partials/macros.html" import crumbs, field, csrf, reason_field with context %}
 {% block title %}{{ module.name }}{% endblock %}
 {% block breadcrumbs %}{{ crumbs([(module.name, module.base_url), (rec.code if rec else 'Neu', none)]) }}{% endblock %}
 {% block content %}

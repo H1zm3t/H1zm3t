@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import badge, csrf, empty %}
+{% from "partials/macros.html" import badge, csrf, empty with context %}
 <div class="card">
   <div class="card-head">
     <h2 class="card-title">Positionen <span class="sum-indicator sum-{{ sum_check.level }}">Σ {{ sum_check.total|de_num(4) }} Gew.-%</span></h2>

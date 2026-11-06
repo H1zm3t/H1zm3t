@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import badge, empty %}
+{% from "partials/macros.html" import badge, empty with context %}
 <div class="grid-2">
 <div class="card"><h2 class="card-title">Revisionen</h2><table class="table table-compact"><tbody>{% for r in revisions %}<tr class="{% if r.id == obj.id %}row-active{% endif %}"><td><a href="/rezepturen/{{ r.id }}">Rev. {{ r.revision }}</a></td><td>{{ r.created_at|de_date }}</td><td>{{ r.revision_reason or '' }}</td><td>{{ badge(r.status) }}</td></tr>{% endfor %}</tbody></table>
 {% if obj.parent %}<p class="muted small">Abgeleitet von <a href="/rezepturen/{{ obj.parent.id }}">{{ obj.parent.label }}</a></p>{% endif %}</div>

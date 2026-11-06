@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import badge, csrf, empty %}
+{% from "partials/macros.html" import badge, csrf, empty with context %}
 <div class="tabs" data-tabs>
   <div class="tab-bar" role="tablist">
     <button type="button" class="tab active" data-tab="anhaenge">Anhänge <span class="count">{{ attachments|length }}</span></button>

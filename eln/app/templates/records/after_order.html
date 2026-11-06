@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import badge, empty %}
+{% from "partials/macros.html" import badge, empty with context %}
 <div class="card"><h2 class="card-title">Verknüpfte Versuche ({{ experiments|length }})</h2>
 {% if experiments %}<table class="table"><thead><tr><th>ID</th><th>Rev.</th><th>Bezeichnung</th><th>Fachbereich</th><th>Verantwortlich</th><th>Geplant</th><th>Status</th></tr></thead><tbody>
 {% for e in experiments %}<tr><td><a href="/versuche/{{ e.id }}">{{ e.code }}</a></td><td>{{ e.revision }}</td><td>{{ e.title }}</td><td>{{ e.department or '' }}</td><td>{{ e.responsible.full_name if e.responsible else '' }}</td><td>{{ e.planned_date|de_date }}</td><td>{{ badge(e.status) }}</td></tr>{% endfor %}

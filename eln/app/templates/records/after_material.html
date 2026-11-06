@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import badge, empty %}
+{% from "partials/macros.html" import badge, empty with context %}
 <div class="card"><div class="card-head"><h2 class="card-title">Chargen</h2>{% if user.has('manage_master_data') %}<a class="btn btn-sm" href="/chargen/neu?material_id={{ obj.id }}">+ Charge</a>{% endif %}</div>
 {% if batches %}<table class="table"><thead><tr><th>ID</th><th>Charge</th><th>Eingang</th><th>MHD</th><th>Lagerort</th><th>Status</th></tr></thead><tbody>{% for b in batches %}<tr class="{% if b.expiry_date and b.expiry_date < today() %}row-danger{% endif %}"><td><a href="/chargen/{{ b.id }}">{{ b.code }}</a></td><td>{{ b.batch_number }}</td><td>{{ b.received_date|de_date }}</td><td>{{ b.expiry_date|de_date }}</td><td>{{ b.storage_location or '' }}</td><td>{{ badge(b.status) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty() }}{% endif %}</div>
 <div class="grid-2">

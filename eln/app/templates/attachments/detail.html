@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, badge, csrf %}
+{% from "partials/macros.html" import crumbs, badge, csrf with context %}
 {% block title %}{{ att.original_filename }}{% endblock %}
 {% block breadcrumbs %}{{ crumbs([((att.entity_type|type_label) ~ ' ' ~ (parent.code if parent else ''), parent_url), ('Anhang', none)]) }}{% endblock %}
 {% block content %}

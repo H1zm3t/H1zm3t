@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, badge, csrf, empty %}
+{% from "partials/macros.html" import crumbs, badge, csrf, empty with context %}
 {% block title %}{{ run.code }}{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Versuche', '/versuche'), (run.experiment.code, '/versuche/' ~ run.experiment.id|string), ('Compoundierlauf ' ~ run.code, none)]) }}{% endblock %}
 {% block content %}

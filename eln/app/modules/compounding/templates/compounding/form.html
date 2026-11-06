@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, field, csrf, reason_field %}
+{% from "partials/macros.html" import crumbs, field, csrf, reason_field with context %}
 {% block title %}Compoundierlauf{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Compoundierung', '/module/compoundierung'), (run.code if run else 'Neu', none)]) }}{% endblock %}
 {% block content %}

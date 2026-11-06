@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, empty %}
+{% from "partials/macros.html" import crumbs, empty with context %}
 {% block title %}MVR / MFR{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('MVR / MFR', none)]) }}{% endblock %}
 {% block content %}

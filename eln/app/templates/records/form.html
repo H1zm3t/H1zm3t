@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, field, reason_field, csrf %}
+{% from "partials/macros.html" import crumbs, field, reason_field, csrf with context %}
 {% block title %}{{ d.label }} {% if obj %}bearbeiten{% else %}anlegen{% endif %}{% endblock %}
 {% block breadcrumbs %}{{ crumbs([(d.plural, d.url)] + ([(obj.code, d.url ~ '/' ~ obj.id|string)] if obj else []) + [('Bearbeiten' if obj else 'Neu', none)]) }}{% endblock %}
 {% block content %}

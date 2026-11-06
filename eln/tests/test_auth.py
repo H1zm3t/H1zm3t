@@ -80,3 +80,23 @@ def test_weak_password_rejected(dbs):
 
     with pytest.raises(auth.AuthError):
         auth.create_user(dbs, SYSTEM, username="x", full_name="X", password="kurz", role_keys=["leser"])
+
+
+def test_rendered_forms_contain_valid_csrf_token(client_factory, sample_data, dbs):
+    """Regression: Formulare in Makros müssen das echte Sitzungstoken enthalten (Browser sendet nur dieses)."""
+    import re
+
+    from app.models import Experiment
+
+    c = client_factory("wiss")
+    page = c.get(f"/versuche/{sample_data['experiment']}").text
+    tokens = set(re.findall(r'name="csrf_token" value="([^"]*)"', page))
+    assert tokens == {c.csrf} and c.csrf
+    r = c.c.post(f"/versuche/{sample_data['experiment']}/workflow",
+                 data={"csrf_token": tokens.pop(), "action": "status:in Bearbeitung"}, follow_redirects=False)
+    assert r.status_code == 303
+    dbs.expire_all()
+    assert dbs.get(Experiment, sample_data["experiment"]).status == "in Bearbeitung"
+    for url in ("/versuche/neu", "/rezepturen", "/admin/benutzer", "/suche?q=x", "/auswertungen?dataset=tasks"):
+        html = client_factory("admin").get(url).text
+        assert 'name="csrf_token" value=""' not in html, url

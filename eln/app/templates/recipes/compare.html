@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs %}
+{% from "partials/macros.html" import crumbs with context %}
 {% block title %}Rezepturvergleich{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Rezepturen', '/rezepturen'), ('Vergleich', none)]) }}{% endblock %}
 {% block content %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, csrf, empty %}
+{% from "partials/macros.html" import crumbs, csrf, empty with context %}
 {% block title %}Auswertungen{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Auswertungen', none)]) }}{% endblock %}
 {% block content %}

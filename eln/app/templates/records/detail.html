@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, badge, csrf, reason_dialog %}
+{% from "partials/macros.html" import crumbs, badge, csrf, reason_dialog with context %}
 {% block title %}{{ obj.code }}{% endblock %}
 {% block breadcrumbs %}{{ crumbs([(d.plural, d.url), (obj.code, none)]) }}{% endblock %}
 {% block content %}

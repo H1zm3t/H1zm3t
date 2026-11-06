@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import csrf %}
+{% from "partials/macros.html" import csrf with context %}
 <div class="card">
   {% if task_target %}<p>Bezug: <a href="{{ task_target.url }}">{{ task_target.label }}</a></p>{% endif %}
   {% if obj.is_overdue %}<div class="alert alert-warning">Diese Aufgabe ist überfällig (fällig am {{ obj.due_date|de_date }}).</div>{% endif %}

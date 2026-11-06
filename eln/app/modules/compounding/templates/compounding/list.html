@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, badge, empty %}
+{% from "partials/macros.html" import crumbs, badge, empty with context %}
 {% block title %}Compoundierung{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Compoundierung', none)]) }}{% endblock %}
 {% block content %}

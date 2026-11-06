@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, csrf, badge %}
+{% from "partials/macros.html" import crumbs, csrf, badge with context %}
 {% block title %}Benutzer{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Benutzer', '/admin/benutzer'), (u.username if u else 'Neu', none)]) }}{% endblock %}
 {% block content %}

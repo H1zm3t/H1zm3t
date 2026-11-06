@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, csrf, reason_field %}
+{% from "partials/macros.html" import crumbs, csrf, reason_field with context %}
 {% block title %}Positionen {{ recipe.code }}{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Rezepturen', '/rezepturen'), (recipe.code ~ ' Rev. ' ~ recipe.revision, '/rezepturen/' ~ recipe.id|string), ('Positionen', none)]) }}{% endblock %}
 {% block content %}

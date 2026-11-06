@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs, csrf %}
+{% from "partials/macros.html" import crumbs, csrf with context %}
 {% block title %}Validierungsbericht{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Import', '/import'), ('Bericht', none)]) }}{% endblock %}
 {% block content %}

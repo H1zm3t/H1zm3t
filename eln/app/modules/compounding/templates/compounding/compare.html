@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import crumbs %}
+{% from "partials/macros.html" import crumbs with context %}
 {% block title %}Vergleich Compoundierläufe{% endblock %}
 {% block breadcrumbs %}{{ crumbs([('Compoundierung', '/module/compoundierung'), ('Vergleich', none)]) }}{% endblock %}
 {% block content %}

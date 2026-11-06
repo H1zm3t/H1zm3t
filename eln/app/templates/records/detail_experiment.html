@@ -1,4 +1,4 @@
-{% from "partials/macros.html" import badge, csrf %}
+{% from "partials/macros.html" import badge, csrf with context %}
 {% set steps = ['Entwurf','in Bearbeitung','abgeschlossen','zur Prüfung','geprüft','freigegeben'] %}
 {% set idx = steps.index(obj.status) if obj.status in steps else (1 if obj.status in ('geplant','pausiert','Korrektur erforderlich') else -1) %}
 <div class="card workflow">
