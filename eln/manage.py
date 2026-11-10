@@ -4,6 +4,7 @@ Aufruf:  python manage.py <befehl> [optionen]
 
 Befehle:
   init               Datenbank anlegen/migrieren und ersten Administrator erstellen
+  needs-setup        Prüft, ob die Ersteinrichtung noch aussteht (Rückgabecode 1 = ja)
   migrate            Datenbankmigrationen ausführen (mit Sicherung vorher)
   create-admin       Weiteren Administrator anlegen
   seed-demo          Beispieldaten anlegen (nur in leerer Datenbank sinnvoll)
@@ -90,6 +91,24 @@ def cmd_init(args) -> None:
     username = args.username or os.environ.get("ELN_ADMIN_USER") or input("Benutzername [admin]: ").strip() or "admin"
     full_name = args.full_name or os.environ.get("ELN_ADMIN_NAME") or input("Vollständiger Name [Administrator]: ").strip() or "Administrator"
     _create_admin(username, full_name, ask_password())
+
+
+def cmd_needs_setup(_args) -> None:
+    """Rückgabecode 1, wenn noch kein Benutzer existiert (Ersteinrichtung nötig), sonst 0."""
+    from app.config import get_settings as _gs
+    from app.db import session_scope
+    from app.models import User
+
+    db_path = _gs().sqlite_path
+    if db_path is not None and not db_path.exists():
+        sys.exit(1)
+    try:
+        with session_scope() as db:
+            sys.exit(0 if db.query(User).count() > 0 else 1)
+    except SystemExit:
+        raise
+    except Exception:
+        sys.exit(1)
 
 
 def cmd_create_admin(args) -> None:
@@ -239,6 +258,7 @@ def main() -> None:
     p.add_argument("--full-name")
     p.set_defaults(func=cmd_init)
     sub.add_parser("migrate").set_defaults(func=cmd_migrate)
+    sub.add_parser("needs-setup").set_defaults(func=cmd_needs_setup)
     p = sub.add_parser("create-admin")
     p.add_argument("--username")
     p.add_argument("--full-name")

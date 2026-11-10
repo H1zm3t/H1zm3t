@@ -4,11 +4,13 @@ rem Aufruf: restore.bat "C:\ELN-Sicherungen\eln_sicherung_20260101_120000.zip"
 chcp 65001 >nul
 cd /d "%~dp0"
 set PYTHONUTF8=1
+set "PY=.venv\Scripts\python.exe"
+if exist "python\python.exe" set "PY=python\python.exe"
 if "%~1"=="" (
   echo Aufruf: restore.bat PFAD_ZUR_SICHERUNG.zip
   echo Vorhandene Sicherungen siehe Ordner laut ELN_BACKUP_DIR in .env
   pause
   exit /b 1
 )
-".venv\Scripts\python.exe" manage.py restore "%~1"
+"%PY%" manage.py restore "%~1"
 pause

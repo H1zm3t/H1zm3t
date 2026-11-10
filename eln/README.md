@@ -98,6 +98,21 @@ Suche, Auswertungen, Berichte, Datensicherung – mit dem Fachmodul **Compoundie
 
 ## 3. Installation unter Windows
 
+### Variante A – portable Version (ohne Python-Installation, empfohlen für Firmen-PCs)
+
+1. Auf GitHub unter **Actions → „ELN portable (Windows)“** den neuesten erfolgreichen Lauf öffnen und unten bei
+   *Artifacts* **ELN-portable-windows** herunterladen.
+2. ZIP-Datei: Rechtsklick → *Eigenschaften* → **Zulassen** anhaken → OK; dann *Alle extrahieren*.
+3. Den enthaltenen Ordner `ELN` an einen festen Ort kopieren, z. B. `C:\ELN`.
+4. Doppelklick auf **`start.bat`**. Beim ersten Start wird der Administrator angelegt (optional Beispieldaten),
+   danach öffnet sich Edge.
+
+Das Paket enthält ein eingebettetes Python 3.12 und alle Pakete im Unterordner `python`. Es sind weder
+Administratorrechte noch eine Internetverbindung nötig. Das Paket wird automatisch auf einem Windows-Rechner gebaut
+und dort geprüft (Tests, Einrichtung, Start, Sicherung).
+
+### Variante B – mit installiertem Python
+
 1. Ordner `eln` an einen festen Ort kopieren, z. B. `C:\ELN\eln` (nicht in „Downloads“ oder einen temporären Ordner).
 2. **Empfohlen:** In `.env.example` bzw. nach der Einrichtung in `.env` die Datenpfade festlegen, z. B.
    ```

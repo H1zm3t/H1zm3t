@@ -1,0 +1,122 @@
+# Baut die portable Windows-Version des ELN (ohne Python-Installation nutzbar)
+# und prüft sie auf einem echten Windows-Rechner.
+name: ELN portable (Windows)
+
+on:
+  push:
+    branches: ["claude/eln-lab-notebook-app-bmxa7z"]
+    paths: ["eln/**", ".github/workflows/eln-portable.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PY_EMBED_VERSION: "3.12.10"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Tests unter Windows
+        working-directory: eln
+        env:
+          PYTHONUTF8: "1"
+        run: |
+          python -m pip install -q -r requirements.txt
+          python -m pytest -q tests
+
+      - name: Portables Paket zusammenstellen
+        run: |
+          $dist = "dist\ELN"
+          New-Item -ItemType Directory -Force $dist | Out-Null
+          Copy-Item -Recurse eln\app, eln\migrations, eln\scripts, eln\docs $dist
+          Copy-Item eln\manage.py, eln\alembic.ini, eln\.env.example, eln\README.md, eln\requirements-runtime.txt $dist
+          Copy-Item eln\start.bat, eln\stop.bat, eln\backup.bat, eln\restore.bat $dist
+          Get-ChildItem $dist -Recurse -Directory -Filter __pycache__ | Remove-Item -Recurse -Force
+
+          # Eingebettetes Python (offizielles "embeddable package" von python.org)
+          $zip = "$env:RUNNER_TEMP\python-embed.zip"
+          Invoke-WebRequest "https://www.python.org/ftp/python/$env:PY_EMBED_VERSION/python-$env:PY_EMBED_VERSION-embed-amd64.zip" -OutFile $zip
+          Expand-Archive $zip "$dist\python"
+          # Suchpfade: Standardbibliothek, Pakete, Programmordner
+          $pth = Get-ChildItem "$dist\python" -Filter "python*._pth" | Select-Object -First 1
+          Set-Content -Path $pth.FullName -Encoding ascii -Value "python312.zip`r`n.`r`nLib\site-packages`r`n..`r`nimport site"
+
+          # Laufzeitpakete direkt in das Paket installieren
+          python -m pip install -q --target "$dist\python\Lib\site-packages" -r eln\requirements-runtime.txt
+
+          Set-Content -Path "$dist\LIESMICH.txt" -Encoding utf8 -Value @"
+          ELN Anwendungstechnik - portable Version (kein Python noetig)
+          =============================================================
+          1. Diesen Ordner an einen festen Ort kopieren, z. B. C:\ELN
+             (nicht im Download-Ordner und nicht in einem ZIP ausfuehren).
+          2. Doppelklick auf start.bat
+             - Beim ersten Start: Administrator anlegen (Benutzername, Name, Passwort
+               mit mind. 10 Zeichen) und optional Beispieldaten anlegen.
+             - Danach oeffnet sich Microsoft Edge mit http://127.0.0.1:8000
+          3. Beenden: schwarzes Fenster schliessen oder stop.bat
+          Datensicherung: backup.bat   Wiederherstellung: restore.bat <zip>
+          Daten liegen im Unterordner "data" (aenderbar in der Datei .env).
+          Ausfuehrliche Anleitung: README.md und Ordner docs.
+          "@
+
+      - name: Portables Paket unter Windows testen (Einrichtung, Start, Sicherung)
+        working-directory: dist\ELN
+        env:
+          PYTHONUTF8: "1"
+          ELN_DATA_DIR: ${{ runner.temp }}\eln-data
+          ELN_BACKUP_DIR: ${{ runner.temp }}\eln-backups
+          ELN_ADMIN_USER: admin
+          ELN_ADMIN_NAME: Administrator
+          ELN_ADMIN_PASSWORD: Pruefung-${{ github.run_id }}-x
+          ELN_OPEN_BROWSER: "0"
+        run: |
+          $py = ".\python\python.exe"
+          & $py --version
+          & $py manage.py needs-setup
+          if ($LASTEXITCODE -ne 1) { throw "needs-setup sollte vor der Einrichtung 1 liefern" }
+          & $py manage.py init
+          if ($LASTEXITCODE -ne 0) { throw "init fehlgeschlagen" }
+          & $py manage.py needs-setup
+          if ($LASTEXITCODE -ne 0) { throw "needs-setup sollte nach der Einrichtung 0 liefern" }
+          & $py manage.py seed-demo --password "Demo-${{ github.run_id }}-x"
+          if ($LASTEXITCODE -ne 0) { throw "seed-demo fehlgeschlagen" }
+          $server = Start-Process -FilePath $py -ArgumentList "manage.py","run","--no-browser" -PassThru -NoNewWindow
+          $ok = $false
+          foreach ($i in 1..30) {
+            Start-Sleep -Seconds 1
+            try { $r = Invoke-WebRequest "http://127.0.0.1:8000/login" -UseBasicParsing; if ($r.StatusCode -eq 200) { $ok = $true; break } } catch {}
+          }
+          if (-not $ok) { throw "Server antwortet nicht" }
+          if ($r.Content -notmatch "Anmelden") { throw "Anmeldeseite unerwartet" }
+          $css = Invoke-WebRequest "http://127.0.0.1:8000/static/css/app.css" -UseBasicParsing
+          if ($css.StatusCode -ne 200) { throw "Statische Dateien fehlen" }
+          & $py manage.py backup
+          if ($LASTEXITCODE -ne 0) { throw "Sicherung fehlgeschlagen" }
+          & $py manage.py verify-audit
+          if ($LASTEXITCODE -ne 0) { throw "Audit-Kette fehlerhaft" }
+          & $py manage.py stop
+          Start-Sleep -Seconds 2
+          if (-not $server.HasExited) { Stop-Process -Id $server.Id -Force }
+          # Keine Laufzeitdaten ins Paket
+          Get-ChildItem . -Recurse -Directory -Filter __pycache__ | Remove-Item -Recurse -Force
+          if (Test-Path .env) { Remove-Item .env }
+          if (Test-Path data) { throw "Datenordner darf nicht im Paket liegen" }
+
+      - name: Paket hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: ELN-portable-windows
+          path: dist
+          retention-days: 90
+          include-hidden-files: true
