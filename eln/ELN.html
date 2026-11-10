@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ELN – Elektronisches Laborbuch</title>
+<style>
+:root{
+  --bg:#f4f6f8; --panel:#ffffff; --panel2:#f9fafb; --line:#dfe4ea; --text:#1c2530; --muted:#66727f;
+  --accent:#0f766e; --accent-ink:#ffffff; --accent-soft:#d9f2ee; --danger:#b42318; --warn:#b54708;
+  --s-geplant:#64748b; --s-laufend:#2563eb; --s-abgeschlossen:#b45309; --s-signiert:#15803d;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+}
+:root[data-theme="dark"]{
+  --bg:#12161b; --panel:#1b2128; --panel2:#161b21; --line:#2c353f; --text:#e6eaee; --muted:#93a0ad;
+  --accent:#2dd4bf; --accent-ink:#06211e; --accent-soft:#16352f; --danger:#f97066; --warn:#fdb022;
+  --s-geplant:#94a3b8; --s-laufend:#60a5fa; --s-abgeschlossen:#fbbf24; --s-signiert:#4ade80;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.ghost{border-color:transparent;background:transparent}
+button.danger{color:var(--danger)}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 10px;min-width:0}
+input:focus,select:focus,textarea:focus,.rt:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.app{display:grid;grid-template-columns:320px 1fr;grid-template-rows:52px 1fr;height:100vh}
+.top{grid-column:1/3;display:flex;align-items:center;gap:10px;padding:0 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.logo{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.logo i{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font-style:normal;font-size:13px}
+.grow{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;background:var(--panel2);white-space:nowrap}
+.chip.warn{border-color:var(--warn);color:var(--warn)}
+.save{font-size:12px;color:var(--muted);min-width:90px;text-align:right}
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.side .tools{padding:12px;display:grid;gap:8px;border-bottom:1px solid var(--line)}
+.side .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.list{overflow:auto;flex:1}
+.item{padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer;border-left:3px solid transparent}
+.item:hover{background:var(--panel2)}
+.item.active{background:var(--accent-soft);border-left-color:var(--accent)}
+.item .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .m{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted)}
+.st-geplant{--c:var(--s-geplant)}.st-laufend{--c:var(--s-laufend)}.st-abgeschlossen{--c:var(--s-abgeschlossen)}.st-signiert{--c:var(--s-signiert)}
+.dot[class*="st-"]{background:var(--c)}
+.badge{font-size:12px;font-weight:600;color:var(--c);border:1px solid var(--c);border-radius:999px;padding:1px 9px}
+.main{overflow:auto;padding:20px 24px 80px}
+.wrap{max-width:980px;margin:0 auto;display:grid;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.card>header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);font-weight:600}
+.card>header .grow{font-weight:400}
+.card>.body{padding:14px}
+.head .title{width:100%;font-size:22px;font-weight:700;border-color:transparent;padding:4px 6px;margin-left:-6px}
+.head .title:hover{border-color:var(--line)}
+.meta{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.meta label,.form label{display:grid;gap:3px;font-size:12px;color:var(--muted)}
+.meta label>*,.form label>*{color:var(--text);font-size:14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tb{display:flex;gap:2px;flex-wrap:wrap;padding:6px 8px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.tb button{padding:2px 8px;min-width:30px;border-color:transparent;background:transparent}
+.tb button:hover{background:var(--panel);border-color:var(--line)}
+.rt{min-height:90px;padding:12px 14px;border-radius:0 0 12px 12px;overflow-wrap:anywhere}
+.rt:empty::before{content:attr(data-ph);color:var(--muted)}
+.rt img{max-width:100%;border-radius:6px}
+.rt h3{margin:.6em 0 .2em;font-size:16px}
+.rt p,.rt ul,.rt ol{margin:.3em 0}
+.gridwrap{overflow:auto}
+table.grid{border-collapse:collapse;width:100%}
+table.grid th,table.grid td{border:1px solid var(--line);padding:0}
+table.grid input{border:0;border-radius:0;width:100%;background:transparent;padding:6px 8px;min-width:90px}
+table.grid th input{font-weight:600;background:var(--panel2)}
+table.grid th.fix{padding:6px 8px;text-align:left;background:var(--panel2);font-weight:600}
+table.grid td.x,table.grid th.x{width:30px;text-align:center;border:0}
+table.grid .x button{padding:0 6px;border:0;background:transparent;color:var(--muted)}
+.gridbar{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.hint{font-size:12px;color:var(--muted)}
+.chart{margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--panel2)}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-size:11px}
+.att{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.att .a{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel2);position:relative}
+.att .a img{width:100%;height:100px;object-fit:cover;display:block;cursor:zoom-in}
+.att .a .file{height:100px;display:grid;place-items:center;font-size:28px;color:var(--muted)}
+.att .a .n{font-size:12px;padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.att .a .n a{color:inherit}
+.att .a .del{position:absolute;top:4px;right:4px;padding:0 7px;border-radius:999px}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:14px;text-align:center;color:var(--muted);margin-top:10px}
+.drop.over{border-color:var(--accent);color:var(--accent)}
+.log{display:grid;gap:6px;font-size:13px}
+.log .l{display:grid;grid-template-columns:150px 150px 1fr;gap:8px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.log .l span:first-child{color:var(--muted)}
+.note{border-left:3px solid var(--accent);padding:6px 10px;background:var(--panel2);border-radius:0 8px 8px 0}
+.note small{color:var(--muted);display:block}
+.sig{border:1px solid var(--s-signiert);border-radius:10px;padding:10px 14px;background:var(--panel2);font-size:13px}
+.sig code{font-size:11px;word-break:break-all;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{padding:14px}
+.stat b{font-size:26px;display:block;color:var(--c,var(--text))}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:0;width:min(520px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(10,15,20,.5)}
+dialog h2{margin:0;padding:16px 20px;font-size:17px;border-bottom:1px solid var(--line)}
+dialog .form{padding:16px 20px;display:grid;gap:12px}
+dialog .form p{margin:0;color:var(--muted)}
+dialog footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--line)}
+dialog.light{width:auto;max-width:94vw;background:transparent;border:0;box-shadow:none}
+dialog.light img{max-width:92vw;max-height:90vh;border-radius:8px;display:block}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99}
+.toast.on{opacity:1}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;grid-template-rows:52px auto 1fr;height:auto;min-height:100vh}
+  .top{grid-column:1} .side{max-height:45vh;border-right:0;border-bottom:1px solid var(--line)}
+  .meta,.stats{grid-template-columns:1fr 1fr} .hide-s{display:none} .log .l{grid-template-columns:1fr}
+}
+@media print{
+  body{background:#fff;color:#000}
+  .top,.side,.tb,.actions,.gridbar,.drop,.x,.del,.noprint,.toast{display:none!important}
+  .app{display:block;height:auto}.main{overflow:visible;padding:0}
+  .card{box-shadow:none;break-inside:avoid;border-color:#bbb}
+  input,select{border:0!important;background:transparent!important;-webkit-appearance:none;appearance:none}
+  .rt{min-height:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="logo" id="home" title="Übersicht"><i>ELN</i><span class="hide-s">Laborbuch</span></div>
+    <span class="grow"></span>
+    <span class="save" id="saveState"></span>
+    <button class="chip" id="storeChip" title="Speicherort &amp; Backup"></button>
+    <button class="chip" id="userChip" title="Benutzer ändern"></button>
+    <button class="ghost" id="themeBtn" title="Hell/Dunkel">◐</button>
+  </div>
+  <aside class="side">
+    <div class="tools">
+      <button class="primary" id="newBtn">＋ Neuer Versuch</button>
+      <input id="q" type="search" placeholder="Suchen (Titel, ID, Text, Tags) …">
+      <div class="row">
+        <select id="fStatus" title="Status">
+          <option value="">Alle Status</option><option value="geplant">Geplant</option><option value="laufend">Laufend</option>
+          <option value="abgeschlossen">Abgeschlossen</option><option value="signiert">Signiert</option>
+        </select>
+        <select id="fProject" title="Projekt"></select>
+      </div>
+    </div>
+    <div class="list" id="list"></div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ============================================================
+   ELN – Elektronisches Laborbuch (eine Datei, keine Installation)
+   Daten: lokal im Browser (IndexedDB) oder als JSON-Dateien in
+   einem gemeinsamen Ordner (File System Access API, Edge/Chrome).
+   ============================================================ */
+
+// ---------- Hilfsfunktionen ----------
+const $ = (s, r = document) => r.querySelector(s);
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (k === 'value' || k === 'textContent' || typeof v === 'boolean') el[k] = v;
+    else el.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) el.append(c.nodeType ? c : document.createTextNode(c));
+  return el;
+}
+const nowISO = () => new Date().toISOString();
+const fmtDT = s => s ? new Date(s).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '';
+const fmtD = s => s ? new Date(s).toLocaleDateString('de-DE') : '';
+const num = s => { const v = parseFloat(String(s).trim().replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return Number.isFinite(v) ? v : null; };
+const clone = o => JSON.parse(JSON.stringify(o));
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+function download(name, content, type) {
+  const url = content instanceof Blob || typeof content !== 'string' || !content.startsWith('data:')
+    ? URL.createObjectURL(content instanceof Blob ? content : new Blob([content], { type })) : content;
+  const a = h('a', { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+  if (url.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// HTML aus Editor / fremden Dateien auf erlaubte Elemente reduzieren
+const OK_TAGS = new Set('B I U S STRONG EM P DIV BR UL OL LI H3 H4 SUB SUP SPAN IMG BLOCKQUOTE PRE CODE TABLE TBODY THEAD TR TD TH A'.split(' '));
+const DROP_TAGS = new Set('SCRIPT STYLE IFRAME OBJECT EMBED LINK META TITLE HEAD SVG MATH FORM TEMPLATE NOSCRIPT'.split(' '));
+function sanitize(html) {
+  const doc = new DOMParser().parseFromString('<body>' + (html || '') + '</body>', 'text/html');
+  for (const el of [...doc.body.querySelectorAll('*')].reverse()) {
+    const tag = el.tagName.toUpperCase();
+    if (DROP_TAGS.has(tag)) { el.remove(); continue; }
+    if (!OK_TAGS.has(tag)) { el.replaceWith(...el.childNodes); continue; }
+    const src = el.getAttribute('src'), href = el.getAttribute('href');
+    for (const a of [...el.attributes]) el.removeAttribute(a.name);
+    if (tag === 'IMG') { if (src && /^data:image\/(png|jpe?g|gif|webp|bmp);/i.test(src)) el.setAttribute('src', src); else el.remove(); }
+    if (tag === 'A' && href && /^https?:\/\//i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
+  }
+  return doc.body.innerHTML;
+}
+const textOf = html => new DOMParser().parseFromString(html || '', 'text/html').body.textContent || '';
+
+// ---------- Dialoge ----------
+function dialog(title, build, buttons) {
+  return new Promise(res => {
+    const d = h('dialog');
+    const form = h('div', { class: 'form' });
+    const close = v => { d.close(); d.remove(); res(v); };
+    build(form, close);
+    const foot = h('footer', null, (buttons || []).map(b => h('button', { class: b.cls || '', onclick: () => close(b.value(form)) }, b.label)));
+    d.append(h('h2', null, title), form, foot);
+    d.addEventListener('cancel', e => { e.preventDefault(); close(null); });
+    d.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); foot.lastChild.click(); } });
+    document.body.append(d); d.showModal();
+  });
+}
+const field = (label, input) => h('label', null, label, input);
+const formVals = form => Object.fromEntries([...form.querySelectorAll('[name]')].map(i => [i.name, i.value.trim()]));
+const confirmDlg = (title, text, okLabel = 'OK', cls = 'primary') => dialog(title, f => f.append(h('p', null, text)),
+  [{ label: 'Abbrechen', value: () => false }, { label: okLabel, cls, value: () => true }]);
+
+// ---------- IndexedDB ----------
+const idb = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('eln', 1);
+      r.onupgradeneeded = () => { r.result.createObjectStore('entries', { keyPath: 'id' }); r.result.createObjectStore('kv'); };
+      r.onsuccess = () => { this.db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  tx(store, mode, fn) {
+    return new Promise((res, rej) => {
+      const t = this.db.transaction(store, mode); const rq = fn(t.objectStore(store));
+      t.oncomplete = () => res(rq && rq.result); t.onerror = () => rej(t.error);
+    });
+  },
+  all: s => idb.tx(s, 'readonly', o => o.getAll()),
+  get: (s, k) => idb.tx(s, 'readonly', o => o.get(k)),
+  put: (s, v, k) => idb.tx(s, 'readwrite', o => k === undefined ? o.put(v) : o.put(v, k)),
+  del: (s, k) => idb.tx(s, 'readwrite', o => o.delete(k)),
+};
+
+// ---------- Zustand ----------
+const S = {
+  entries: new Map(), cur: null, dirty: false, dir: null, diskRev: new Map(), templates: [],
+  user: JSON.parse(localStorage.getItem('eln.user') || 'null'), lastScan: 0,
+};
+const STATUS = { geplant: 'Geplant', laufend: 'Laufend', abgeschlossen: 'Abgeschlossen', signiert: 'Signiert' };
+const statusOf = e => e.signature ? 'signiert' : e.status;
+const SECTIONS = [
+  ['ziel', 'Ziel & Hypothese', 'Was soll untersucht werden? Welche Erwartung gibt es?'],
+  ['aufbau', 'Versuchsaufbau', 'Aufbau, Parameter, Skizzen/Fotos (Bilder einfach mit Strg+V einfügen) …'],
+  ['durchfuehrung', 'Durchführung & Beobachtungen', 'Schritte, Zeiten, Abweichungen, Beobachtungen …'],
+  ['ergebnisse', 'Ergebnisse & Auswertung', 'Was kam heraus? Auswertung der Messdaten …'],
+  ['fazit', 'Fazit & nächste Schritte', 'Schlussfolgerung, offene Punkte, Folgeversuche …'],
+];
+const MAT_COLS = ['Bezeichnung', 'Typ / Hersteller', 'Charge / Serien-Nr.', 'Menge / Einstellung'];
+const BUILTIN = [
+  { name: 'Leer', sections: {}, data: { cols: ['Messung', 'Wert'], rows: [['', '']] } },
+  { name: 'Standardversuch', sections: {
+      ziel: '<p><b>Fragestellung:</b> </p><p><b>Hypothese:</b> </p>',
+      aufbau: '<p><b>Aufbau:</b> </p><p><b>Parameter:</b> </p>',
+      durchfuehrung: '<ol><li>Vorbereitung</li><li>Durchführung</li><li>Nachbereitung</li></ol><p><b>Beobachtungen:</b> </p>',
+      ergebnisse: '<p></p>', fazit: '<p><b>Fazit:</b> </p><p><b>Nächste Schritte:</b> </p>' },
+    data: { cols: ['Nr.', 'Parameter', 'Messwert', 'Einheit'], rows: [['1', '', '', '']] } },
+  { name: 'Messreihe / Prüfung', sections: {
+      ziel: '<p><b>Prüfziel:</b> </p><p><b>Norm / Prüfvorschrift:</b> </p>',
+      aufbau: '<p><b>Prüfmittel:</b> </p><p><b>Umgebungsbedingungen:</b> Temperatur … °C, rel. Feuchte … %</p>',
+      durchfuehrung: '<p><b>Probenvorbereitung:</b> </p><p><b>Ablauf:</b> </p>',
+      ergebnisse: '<p><b>Bewertung (i.O. / n.i.O.):</b> </p>', fazit: '<p></p>' },
+    data: { cols: ['Probe', 'x', 'y', 'Bemerkung'], rows: [['1', '', '', ''], ['2', '', '', ''], ['3', '', '', '']] } },
+  { name: 'Synthese / Rezeptur', sections: {
+      ziel: '<p><b>Zielprodukt:</b> </p><p><b>Reaktionsgleichung / Rezepturidee:</b> </p>',
+      aufbau: '<p><b>Apparatur:</b> </p><p><b>Sicherheit (GHS, PSA):</b> </p>',
+      durchfuehrung: '<ol><li>Einwaage</li><li>Reaktion</li><li>Aufarbeitung</li></ol>',
+      ergebnisse: '<p><b>Ausbeute:</b> </p><p><b>Analytik:</b> </p>', fazit: '<p></p>' },
+    data: { cols: ['Komponente', 'Soll [g]', 'Ist [g]', 'Anteil [%]'], rows: [['', '', '', '']] } },
+];
+
+// ---------- Speicher (lokal oder Ordner) ----------
+const fileName = id => id.replace(/[^\w.-]/g, '_') + '.json';
+async function dirRead(name) {
+  try { const fh = await S.dir.getFileHandle(name); return JSON.parse(await (await fh.getFile()).text()); }
+  catch (e) { return null; }
+}
+async function dirWrite(name, obj) {
+  const fh = await S.dir.getFileHandle(name, { create: true });
+  const w = await fh.createWritable(); await w.write(JSON.stringify(obj, null, 1)); await w.close();
+}
+async function loadAll() {
+  S.entries.clear(); S.diskRev.clear();
+  if (S.dir) {
+    for await (const [name, hnd] of S.dir.entries()) {
+      if (hnd.kind !== 'file' || !name.endsWith('.json') || name.startsWith('_')) continue;
+      const e = await dirRead(name);
+      if (e && e.id && e.sections) { normalize(e); S.entries.set(e.id, e); S.diskRev.set(e.id, e.rev); }
+    }
+    S.templates = (await dirRead('_vorlagen.json')) || [];
+  } else {
+    for (const e of await idb.all('entries')) { normalize(e); S.entries.set(e.id, e); }
+    S.templates = (await idb.get('kv', 'templates')) || [];
+  }
+  S.lastScan = Date.now();
+}
+function normalize(e) {
+  e.sections = e.sections || {}; e.tags = e.tags || []; e.attachments = e.attachments || []; e.history = e.history || [];
+  e.notes = e.notes || []; e.rev = e.rev || 1; e.status = STATUS[e.status] && e.status !== 'signiert' ? e.status : 'geplant';
+  e.materials = e.materials && e.materials.rows ? e.materials : { cols: MAT_COLS, rows: [['', '', '', '']] };
+  e.data = e.data && e.data.cols ? e.data : { cols: ['Messung', 'Wert'], rows: [['', '']] };
+  e.chart = e.chart || { x: 0, y: 1 };
+}
+// Rückgabe false = Konflikt, Version vom Datenträger wurde geladen
+async function persist(e) {
+  if (!S.dir) { await idb.put('entries', e); return true; }
+  const disk = await dirRead(fileName(e.id));
+  if (disk && disk.rev !== S.diskRev.get(e.id)) {
+    const overwrite = await confirmDlg('Konflikt', `„${e.title}“ wurde inzwischen von ${disk.modifiedBy || 'jemand anderem'} geändert (${fmtDT(disk.modified)}). Eigene Version trotzdem speichern und die andere überschreiben?`, 'Überschreiben', 'danger');
+    if (!overwrite) { normalize(disk); S.entries.set(disk.id, disk); S.diskRev.set(disk.id, disk.rev); return false; }
+    e.rev = Math.max(e.rev, disk.rev + 1);
+  }
+  await dirWrite(fileName(e.id), e); S.diskRev.set(e.id, e.rev); return true;
+}
+async function removeEntry(e) {
+  if (S.dir) await S.dir.removeEntry(fileName(e.id)).catch(() => {}); else await idb.del('entries', e.id);
+  S.entries.delete(e.id); S.diskRev.delete(e.id);
+}
+async function saveTemplates() {
+  if (S.dir) await dirWrite('_vorlagen.json', S.templates); else await idb.put('kv', S.templates, 'templates');
+}
+
+// ---------- Speichern ----------
+let saveT, saving = Promise.resolve();
+function setSave(t) { $('#saveState').textContent = t; }
+function touch() {
+  if (!S.cur) return;
+  S.dirty = true; setSave('Ungespeichert …'); clearTimeout(saveT); saveT = setTimeout(saveNow, 800);
+}
+function logHist(e, action) { e.history.push({ ts: nowISO(), user: S.user.name, action }); }
+function saveNow() {
+  clearTimeout(saveT);
+  saving = saving.then(async () => {
+    const e = S.cur; if (!e || !S.dirty) return;
+    S.dirty = false;
+    const last = e.history[e.history.length - 1];
+    if (!(last && last.action === 'Bearbeitet' && last.user === S.user.name && Date.now() - new Date(last.ts) < 15 * 60e3)) logHist(e, 'Bearbeitet');
+    e.modified = nowISO(); e.modifiedBy = S.user.name; e.rev++;
+    try {
+      const ok = await persist(e);
+      setSave(ok ? 'Gespeichert ' + new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '');
+      if (!ok) { S.cur = null; openEntry(e.id); }
+      renderList();
+    } catch (err) { S.dirty = true; setSave('Fehler beim Speichern!'); toast('Speichern fehlgeschlagen: ' + err.message); }
+  });
+  return saving;
+}
+window.addEventListener('beforeunload', ev => { if (S.dirty) { saveNow(); ev.preventDefault(); ev.returnValue = ''; } });
+
+// ---------- Einträge ----------
+function nextId() {
+  const prefix = `${new Date().getFullYear()}-${S.user.kuerzel}-`;
+  let max = 0;
+  for (const id of S.entries.keys()) if (id.startsWith(prefix)) max = Math.max(max, parseInt(id.slice(prefix.length), 10) || 0);
+  return prefix + String(max + 1).padStart(3, '0');
+}
+async function createEntry(base) {
+  await saveNow();
+  if (S.dir) await rescan(true);           // IDs anderer Kollegen berücksichtigen
+  const e = Object.assign({
+    id: nextId(), title: 'Neuer Versuch', project: '', author: S.user.name, created: nowISO(), modified: nowISO(), modifiedBy: S.user.name,
+    date: new Date().toISOString().slice(0, 10), status: 'geplant', tags: [], sections: {}, attachments: [], notes: [], history: [], rev: 1,
+  }, clone(base));
+  normalize(e); logHist(e, 'Erstellt' + (base.ref ? ' (Folgeversuch von ' + base.ref + ')' : ''));
+  S.entries.set(e.id, e); await persist(e); renderList(); openEntry(e.id);
+  return e;
+}
+async function newEntryDialog() {
+  const tpls = [...BUILTIN, ...S.templates];
+  const v = await dialog('Neuer Versuch', f => {
+    f.append(
+      field('Titel', h('input', { name: 'title', placeholder: 'z. B. Zugversuch Charge 12', autofocus: true })),
+      field('Projekt', h('input', { name: 'project', list: 'projList', placeholder: 'Projekt / Auftrag' })),
+      h('datalist', { id: 'projList' }, projects().map(p => h('option', { value: p }))),
+      field('Vorlage', h('select', { name: 'tpl' }, tpls.map((t, i) => h('option', { value: String(i), selected: i === 1 }, t.name + (i >= BUILTIN.length ? ' (eigene)' : '')))))
+    );
+  }, [{ label: 'Abbrechen', value: () => null }, { label: 'Anlegen', cls: 'primary', value: formVals }]);
+  if (!v) return;
+  const t = tpls[+v.tpl];
+  await createEntry({ title: v.title || 'Neuer Versuch', project: v.project, sections: t.sections, data: t.data, materials: t.materials });
+}
+const projects = () => [...new Set([...S.entries.values()].map(e => e.project).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+
+// ---------- Signatur ----------
+async function hashEntry(e) {
+  const payload = JSON.stringify([e.id, e.title, e.project, e.author, e.created, e.date, e.tags, e.sections, e.materials, e.data,
+    e.attachments.map(a => [a.name, a.size, a.dataUrl])]);
+  if (!(window.crypto && crypto.subtle)) return null;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function signEntry(e) {
+  const ok = await confirmDlg('Versuch signieren', `Mit der Signatur bestätigt ${S.user.name} die Richtigkeit des Eintrags. Danach ist er schreibgeschützt – nur Nachträge und eine Gegenzeichnung sind noch möglich.`, 'Signieren');
+  if (!ok) return;
+  await saveNow();
+  e.signature = { user: S.user.name, ts: nowISO(), hash: await hashEntry(e) };
+  logHist(e, 'Signiert'); await forceSave(e);
+}
+async function forceSave(e) {
+  e.modified = nowISO(); e.modifiedBy = S.user.name; e.rev++;
+  const ok = await persist(e); renderList(); S.cur = null; openEntry(e.id);
+  if (ok) setSave('Gespeichert');
+}
+
+// ---------- Seitenleiste ----------
+function matches(e) {
+  const st = $('#fStatus').value, pr = $('#fProject').value, q = $('#q').value.trim().toLowerCase();
+  if (st && statusOf(e) !== st) return false;
+  if (pr && e.project !== pr) return false;
+  if (!q) return true;
+  const hay = [e.id, e.title, e.project, e.author, e.tags.join(' '), ...Object.values(e.sections).map(textOf),
+    e.materials.rows.flat().join(' '), e.data.cols.join(' '), e.notes.map(n => n.text).join(' ')].join(' ').toLowerCase();
+  return q.split(/\s+/).every(w => hay.includes(w));
+}
+function renderList() {
+  const sel = $('#fProject'), cur = sel.value;
+  sel.replaceChildren(h('option', { value: '' }, 'Alle Projekte'), ...projects().map(p => h('option', { value: p, selected: p === cur }, p)));
+  const items = [...S.entries.values()].filter(matches).sort((a, b) => (b.modified || '').localeCompare(a.modified || ''));
+  $('#list').replaceChildren(...(items.length ? items.map(e => h('div', { class: 'item' + (S.cur && S.cur.id === e.id ? ' active' : ''), onclick: () => openEntry(e.id) },
+    h('div', { class: 't' }, e.title || '(ohne Titel)'),
+    h('div', { class: 'm' }, h('span', { class: 'dot st-' + statusOf(e), title: STATUS[statusOf(e)] }), [e.id, fmtD(e.date), e.project].filter(Boolean).join(' · '))
+  )) : [h('div', { class: 'empty' }, S.entries.size ? 'Keine Treffer.' : 'Noch keine Versuche. Mit „Neuer Versuch“ starten.')]));
+}
+
+// ---------- Übersicht ----------
+function renderHome() {
+  S.cur = null; setSave('');
+  const all = [...S.entries.values()];
+  const count = st => all.filter(e => statusOf(e) === st).length;
+  const recent = all.sort((a, b) => (b.modified || '').localeCompare(a.modified || '')).slice(0, 8);
+  $('#main').replaceChildren(h('div', { class: 'wrap' },
+    h('h1', { style: 'margin:0' }, 'Übersicht'),
+    h('div', { class: 'stats' }, Object.entries(STATUS).map(([k, l]) => h('div', { class: 'card stat st-' + k }, h('b', null, String(count(k))), l))),
+    h('div', { class: 'card' }, h('header', null, 'Zuletzt bearbeitet'),
+      h('div', { class: 'body log' }, recent.length ? recent.map(e => h('div', { class: 'l', style: 'cursor:pointer', onclick: () => openEntry(e.id) },
+        h('span', null, fmtDT(e.modified)), h('span', null, e.id), h('span', null, h('b', null, e.title), e.project ? ' – ' + e.project : ''))) : h('div', { class: 'empty' }, 'Noch keine Einträge.'))),
+    h('div', { class: 'card' }, h('header', null, 'Speicherort'),
+      h('div', { class: 'body' }, h('p', { style: 'margin-top:0' }, S.dir
+        ? `Gemeinsamer Ordner „${S.dir.name}“ – jeder Versuch liegt dort als eigene JSON-Datei. Kolleginnen und Kollegen öffnen dieselbe ELN.html und verbinden denselben Ordner.`
+        : 'Die Daten liegen derzeit nur lokal in diesem Browser. Für die Zusammenarbeit im Team einen gemeinsamen Ordner (z. B. Netzlaufwerk, SharePoint-/OneDrive-Sync) verbinden und regelmäßig ein Backup exportieren.'),
+        h('button', { onclick: storageDialog }, 'Speicherort & Backup …')))
+  ));
+  renderList();
+}
+
+// ---------- Rich-Text-Editor ----------
+function fileToDataUrl(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }); }
+function richEditor(e, key, ph, locked) {
+  const ed = h('div', { class: 'rt', contenteditable: locked ? 'false' : 'true', 'data-ph': locked ? '–' : ph });
+  ed.innerHTML = sanitize(e.sections[key]);
+  const sync = () => { e.sections[key] = ed.innerHTML === '<br>' ? '' : ed.innerHTML; touch(); };
+  ed.addEventListener('input', sync);
+  ed.addEventListener('paste', async ev => {
+    const cd = ev.clipboardData; if (!cd) return;
+    const img = [...cd.files].find(f => f.type.startsWith('image/'));
+    if (img) { ev.preventDefault(); const url = await fileToDataUrl(img); ed.focus(); document.execCommand('insertHTML', false, sanitize(`<img src="${url}">`)); sync(); return; }
+    const html = cd.getData('text/html');
+    if (html) { ev.preventDefault(); document.execCommand('insertHTML', false, sanitize(html)); sync(); }
+  });
+  if (locked) return [ed];
+  const cmd = (label, title, c, arg) => h('button', { title, type: 'button', onmousedown: ev => { ev.preventDefault(); ed.focus(); document.execCommand(c, false, arg); sync(); } }, label);
+  const tb = h('div', { class: 'tb' },
+    cmd(h('b', null, 'F'), 'Fett', 'bold'), cmd(h('i', null, 'K'), 'Kursiv', 'italic'), cmd(h('u', null, 'U'), 'Unterstrichen', 'underline'),
+    cmd('H', 'Überschrift', 'formatBlock', 'H3'), cmd('¶', 'Absatz', 'formatBlock', 'P'),
+    cmd('• Liste', 'Aufzählung', 'insertUnorderedList'), cmd('1. Liste', 'Nummerierung', 'insertOrderedList'),
+    cmd(h('span', null, 'x', h('sub', null, '2')), 'Tiefgestellt', 'subscript'), cmd(h('span', null, 'x', h('sup', null, '2')), 'Hochgestellt', 'superscript'),
+    cmd('⌫ Format', 'Formatierung entfernen', 'removeFormat'));
+  return [tb, ed];
+}
+
+// ---------- Tabellen-Editor ----------
+function gridEditor(model, { fixed, locked, onChange }) {
+  const wrap = h('div');
+  const changed = () => { touch(); onChange && onChange(); };
+  function render() {
+    const cell = (r, c) => h('input', { value: model.rows[r][c] ?? '', disabled: locked, oninput: ev => { model.rows[r][c] = ev.target.value; changed(); },
+      onpaste: ev => {
+        const txt = ev.clipboardData.getData('text/plain');
+        if (!/[\t\n]/.test(txt.trim())) return;
+        ev.preventDefault();
+        txt.replace(/\r/g, '').replace(/\n$/, '').split('\n').forEach((line, i) => line.split('\t').forEach((val, j) => {
+          const rr = r + i, cc = c + j;
+          if (cc >= model.cols.length) { if (fixed) return; model.cols.push('Spalte ' + (cc + 1)); model.rows.forEach(row => row.push('')); }
+          while (rr >= model.rows.length) model.rows.push(model.cols.map(() => ''));
+          model.rows[rr][cc] = val;
+        }));
+        changed(); render();
+      },
+      onkeydown: ev => { if (ev.key === 'Enter') { if (r === model.rows.length - 1) { addRow(); } const n = wrap.querySelectorAll('tbody tr')[r + 1]; n && n.children[c].firstChild.focus(); } } });
+    const addRow = () => { model.rows.push(model.cols.map(() => '')); changed(); render(); };
+    const table = h('table', { class: 'grid' },
+      h('thead', null, h('tr', null, model.cols.map((name, c) => fixed ? h('th', { class: 'fix' }, name)
+        : h('th', null, h('input', { value: name, disabled: locked, title: 'Spaltenname', oninput: ev => { model.cols[c] = ev.target.value; changed(); } }))), h('th', { class: 'x' }))),
+      h('tbody', null, model.rows.map((row, r) => h('tr', null, model.cols.map((_, c) => h('td', null, cell(r, c))),
+        h('td', { class: 'x' }, !locked && h('button', { title: 'Zeile löschen', onclick: () => { model.rows.splice(r, 1); if (!model.rows.length) model.rows.push(model.cols.map(() => '')); changed(); render(); } }, '✕'))))));
+    const bar = h('div', { class: 'gridbar' });
+    if (!locked) {
+      bar.append(h('button', { onclick: addRow }, '＋ Zeile'));
+      if (!fixed) bar.append(
+        h('button', { onclick: () => { model.cols.push('Spalte ' + (model.cols.length + 1)); model.rows.forEach(r => r.push('')); changed(); render(); } }, '＋ Spalte'),
+        h('button', { disabled: model.cols.length < 2, onclick: () => { model.cols.pop(); model.rows.forEach(r => r.pop()); changed(); render(); } }, '− letzte Spalte'));
+      bar.append(h('span', { class: 'hint' }, 'Tipp: Bereiche aus Excel kopieren und in eine Zelle einfügen.'));
+    }
+    wrap.replaceChildren(h('div', { class: 'gridwrap' }, table), bar);
+  }
+  render();
+  return wrap;
+}
+function toCSV(m) { const q = v => /[";\n]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : v; return '﻿' + [m.cols, ...m.rows].map(r => r.map(v => q(v ?? '')).join(';')).join('\r\n'); }
+
+// ---------- Diagramm ----------
+function chartView(e, locked) {
+  const box = h('div', { class: 'chart' });
+  const NS = 'http://www.w3.org/2000/svg';
+  const s = (tag, attrs, text) => { const el = document.createElementNS(NS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); if (text != null) el.textContent = text; return el; };
+  function render() {
+    const m = e.data, ch = e.chart;
+    if (ch.x >= m.cols.length) ch.x = 0; if (ch.y >= m.cols.length) ch.y = Math.min(1, m.cols.length - 1);
+    const pick = key => h('select', { disabled: locked, onchange: ev => { ch[key] = +ev.target.value; touch(); render(); } },
+      m.cols.map((c, i) => h('option', { value: String(i), selected: i === ch[key] }, c || 'Spalte ' + (i + 1))));
+    const pts = m.rows.map(r => [num(r[ch.x]), num(r[ch.y])]).filter(p => p[0] != null && p[1] != null);
+    const head = h('div', { class: 'gridbar noprint', style: 'margin:0 0 6px' }, 'Diagramm:', 'X', pick('x'), 'Y', pick('y'));
+    if (pts.length < 2) { box.replaceChildren(head, h('div', { class: 'hint' }, 'Für ein Diagramm mindestens zwei Zeilen mit Zahlen in den gewählten Spalten eintragen.')); return; }
+    const W = 720, H = 280, L = 60, R = 16, T = 12, B = 40;
+    const ext = i => { let a = Math.min(...pts.map(p => p[i])), b = Math.max(...pts.map(p => p[i])); if (a === b) { a -= 1; b += 1; } const pad = (b - a) * .05; return [a - pad, b + pad]; };
+    const [x0, x1] = ext(0), [y0, y1] = ext(1);
+    const X = v => L + (v - x0) / (x1 - x0) * (W - L - R), Y = v => H - B - (v - y0) / (y1 - y0) * (H - T - B);
+    const f = v => v.toLocaleString('de-DE', { maximumSignificantDigits: 4 });
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img' });
+    for (let i = 0; i <= 5; i++) {
+      const xv = x0 + (x1 - x0) * i / 5, yv = y0 + (y1 - y0) * i / 5;
+      svg.append(s('line', { x1: L, x2: W - R, y1: Y(yv), y2: Y(yv), stroke: 'var(--line)' }), s('text', { x: L - 6, y: Y(yv) + 4, 'text-anchor': 'end' }, f(yv)),
+        s('line', { x1: X(xv), x2: X(xv), y1: T, y2: H - B, stroke: 'var(--line)' }), s('text', { x: X(xv), y: H - B + 15, 'text-anchor': 'middle' }, f(xv)));
+    }
+    svg.append(s('text', { x: (L + W - R) / 2, y: H - 6, 'text-anchor': 'middle' }, m.cols[ch.x]),
+      s('text', { x: 14, y: (T + H - B) / 2, 'text-anchor': 'middle', transform: `rotate(-90 14 ${(T + H - B) / 2})` }, m.cols[ch.y]),
+      s('polyline', { points: [...pts].sort((a, b) => a[0] - b[0]).map(p => X(p[0]) + ',' + Y(p[1])).join(' '), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2 }));
+    for (const p of pts) { const c = s('circle', { cx: X(p[0]), cy: Y(p[1]), r: 4, fill: 'var(--accent)' }); c.append(s('title', {}, `${f(p[0])} | ${f(p[1])}`)); svg.append(c); }
+    box.replaceChildren(head, svg);
+  }
+  render(); box.refresh = render;
+  return box;
+}
+
+// ---------- Anhänge ----------
+const MAX_FILE = 8 * 1024 * 1024;
+function attachmentsView(e, locked) {
+  const grid = h('div', { class: 'att' });
+  function render() {
+    grid.replaceChildren(...e.attachments.map((a, i) => h('div', { class: 'a' },
+      /^data:image\/(png|jpe?g|gif|webp|bmp);/i.test(a.dataUrl)
+        ? h('img', { src: a.dataUrl, alt: a.name, onclick: () => lightbox(a.dataUrl) }) : h('div', { class: 'file' }, '📄'),
+      h('div', { class: 'n', title: a.name }, h('a', { href: '#', onclick: ev => { ev.preventDefault(); download(a.name, a.dataUrl); } }, a.name)),
+      !locked && h('button', { class: 'del', title: 'Entfernen', onclick: () => { e.attachments.splice(i, 1); touch(); render(); } }, '✕'))));
+  }
+  async function add(files) {
+    for (const f of files) {
+      if (f.size > MAX_FILE) { toast(`„${f.name}“ ist größer als 8 MB und wurde nicht angehängt.`); continue; }
+      e.attachments.push({ name: f.name, type: f.type, size: f.size, added: nowISO(), by: S.user.name, dataUrl: await fileToDataUrl(f) });
+    }
+    touch(); render();
+  }
+  render();
+  if (locked) return [grid, !e.attachments.length && h('div', { class: 'hint' }, 'Keine Anhänge.')];
+  const inp = h('input', { type: 'file', multiple: true, style: 'display:none', onchange: ev => { add(ev.target.files); ev.target.value = ''; } });
+  const drop = h('div', { class: 'drop',
+    ondragover: ev => { ev.preventDefault(); drop.classList.add('over'); }, ondragleave: () => drop.classList.remove('over'),
+    ondrop: ev => { ev.preventDefault(); drop.classList.remove('over'); add(ev.dataTransfer.files); } },
+    'Dateien hierher ziehen oder ', h('button', { onclick: () => inp.click() }, 'auswählen'), ' (Fotos, PDFs, Messdateien – max. 8 MB je Datei)', inp);
+  return [grid, drop];
+}
+function lightbox(src) {
+  const d = h('dialog', { class: 'light', onclick: () => { d.close(); d.remove(); } }, h('img', { src }));
+  document.body.append(d); d.showModal();
+}
+
+// ---------- Eintrag anzeigen ----------
+async function openEntry(id) {
+  if (S.cur && S.cur.id !== id) await saveNow();
+  const e = S.entries.get(id); if (!e) return renderHome();
+  S.cur = e;
+  const locked = !!e.signature, st = statusOf(e);
+  const bind = (key, attrs) => h('input', Object.assign({ value: e[key] || '', disabled: locked, oninput: ev => { e[key] = ev.target.value; touch(); } }, attrs));
+  const card = (title, ...body) => h('section', { class: 'card' }, h('header', null, title), ...body);
+
+  const head = h('section', { class: 'card head' }, h('div', { class: 'body' },
+    h('div', { style: 'display:flex;gap:10px;align-items:center' }, h('span', { class: 'chip' }, e.id), h('span', { class: 'badge st-' + st }, STATUS[st]),
+      e.ref && h('span', { class: 'chip', style: 'cursor:pointer', onclick: () => openEntry(e.ref) }, '↩ Folgeversuch von ' + e.ref)),
+    bind('title', { class: 'title', placeholder: 'Titel des Versuchs' }),
+    h('div', { class: 'meta' },
+      field('Projekt', bind('project', { list: 'projList2' })), h('datalist', { id: 'projList2' }, projects().map(p => h('option', { value: p }))),
+      field('Versuchsdatum', bind('date', { type: 'date' })),
+      field('Status', h('select', { disabled: locked, onchange: ev => { e.status = ev.target.value; logHist(e, 'Status: ' + STATUS[e.status]); touch(); saveNow().then(() => { S.cur = null; openEntry(e.id); }); } },
+        ['geplant', 'laufend', 'abgeschlossen'].map(k => h('option', { value: k, selected: e.status === k }, STATUS[k])))),
+      field('Tags (mit Komma)', h('input', { value: e.tags.join(', '), disabled: locked, oninput: ev => { e.tags = ev.target.value.split(',').map(t => t.trim()).filter(Boolean); touch(); } }))),
+    h('div', { class: 'hint', style: 'margin-top:8px' }, `Erstellt von ${e.author} am ${fmtDT(e.created)} · zuletzt geändert ${fmtDT(e.modified)} von ${e.modifiedBy || e.author} · Rev. ${e.rev}`),
+    h('div', { class: 'actions' },
+      !locked && h('button', { class: 'primary', onclick: () => signEntry(e) }, '✔ Signieren & sperren'),
+      locked && !e.signature.witness && e.signature.user !== S.user.name && h('button', { class: 'primary', onclick: async () => { e.signature.witness = { user: S.user.name, ts: nowISO() }; logHist(e, 'Gegengezeichnet'); await forceSave(e); } }, '✔ Gegenzeichnen'),
+      h('button', { onclick: async () => { await saveNow(); window.print(); } }, '🖨 Drucken / PDF'),
+      h('button', { onclick: async () => { await saveNow(); createEntry({ title: e.title + ' (Folgeversuch)', project: e.project, tags: e.tags, sections: e.sections, materials: e.materials, data: e.data, chart: e.chart, ref: e.id }); } }, '⧉ Folgeversuch / Kopie'),
+      h('button', { onclick: async () => {
+        const v = await dialog('Als Vorlage speichern', f => f.append(field('Name der Vorlage', h('input', { name: 'name', value: e.title }))), [{ label: 'Abbrechen', value: () => null }, { label: 'Speichern', cls: 'primary', value: formVals }]);
+        if (!v || !v.name) return;
+        S.templates = S.templates.filter(t => t.name !== v.name);
+        S.templates.push({ name: v.name, sections: clone(e.sections), materials: clone(e.materials), data: { cols: [...e.data.cols], rows: [e.data.cols.map(() => '')] } });
+        await saveTemplates(); toast('Vorlage gespeichert.');
+      } }, '☆ Als Vorlage'),
+      h('button', { onclick: async () => { await saveNow(); download(fileName(e.id), JSON.stringify(e, null, 1), 'application/json'); } }, '⭳ Export (JSON)'),
+      !locked && h('button', { class: 'danger', onclick: async () => { if (await confirmDlg('Versuch löschen', `„${e.title}“ (${e.id}) endgültig löschen?`, 'Löschen', 'danger')) { S.dirty = false; await removeEntry(e); renderHome(); } } }, '🗑 Löschen'))
+  ));
+
+  let sigBox = null;
+  if (locked) {
+    const res = h('span');
+    sigBox = h('div', { class: 'sig' }, h('b', null, '🔒 Signiert von ' + e.signature.user), ' am ' + fmtDT(e.signature.ts),
+      e.signature.witness ? ` · gegengezeichnet von ${e.signature.witness.user} am ${fmtDT(e.signature.witness.ts)}` : '', h('br'),
+      h('code', null, 'SHA-256: ' + (e.signature.hash || 'nicht verfügbar')), ' ',
+      e.signature.hash && h('button', { class: 'noprint', onclick: async () => { const okH = (await hashEntry(e)) === e.signature.hash; res.textContent = okH ? ' ✔ Inhalt unverändert' : ' ✖ Inhalt wurde nach der Signatur verändert!'; res.style.color = okH ? 'var(--s-signiert)' : 'var(--danger)'; } }, 'Integrität prüfen'), res);
+  }
+
+  const chart = chartView(e, locked);
+  const sec = k => { const s = SECTIONS.find(x => x[0] === k); return card(s[1], ...richEditor(e, k, s[2], locked)); };
+  const noteInput = h('input', { placeholder: 'Nachtrag / Kommentar hinzufügen …', style: 'flex:1' });
+  const addNote = async () => { const t = noteInput.value.trim(); if (!t) return; await saveNow(); e.notes.push({ ts: nowISO(), user: S.user.name, text: t }); logHist(e, 'Nachtrag'); await forceSave(e); };
+  noteInput.addEventListener('keydown', ev => { if (ev.key === 'Enter') addNote(); });
+
+  $('#main').replaceChildren(h('div', { class: 'wrap' }, head, sigBox,
+    sec('ziel'), sec('aufbau'),
+    card('Materialien & Geräte', h('div', { class: 'body' }, gridEditor(e.materials, { fixed: true, locked }))),
+    sec('durchfuehrung'),
+    card(h('span', null, 'Messdaten'), h('div', { class: 'body' }, gridEditor(e.data, { locked, onChange: () => chart.refresh() }),
+      h('div', { class: 'gridbar noprint' }, h('button', { onclick: () => download(e.id + '_messdaten.csv', toCSV(e.data), 'text/csv') }, '⭳ CSV für Excel')), chart)),
+    sec('ergebnisse'), sec('fazit'),
+    card('Anhänge', h('div', { class: 'body' }, ...attachmentsView(e, locked))),
+    card('Nachträge & Kommentare', h('div', { class: 'body', style: 'display:grid;gap:8px' },
+      e.notes.map(n => h('div', { class: 'note' }, h('small', null, `${n.user} · ${fmtDT(n.ts)}`), n.text)),
+      h('div', { class: 'gridbar', style: 'margin:0' }, noteInput, h('button', { onclick: addNote }, 'Hinzufügen')))),
+    card('Änderungsverlauf', h('div', { class: 'body log' }, [...e.history].reverse().map(x => h('div', { class: 'l' }, h('span', null, fmtDT(x.ts)), h('span', null, x.user), h('span', null, x.action)))))
+  ));
+  $('#main').scrollTop = 0;
+  renderList();
+}
+
+// ---------- Ordner / Backup ----------
+const canDir = 'showDirectoryPicker' in window;
+async function useDir(handle, offerCopy) {
+  await saveNow();
+  const local = S.dir ? [] : [...S.entries.values()];
+  S.dir = handle; await idb.put('kv', handle, 'dir').catch(() => {});
+  await loadAll();
+  const missing = local.filter(e => !S.entries.has(e.id));
+  if (offerCopy && missing.length && await confirmDlg('Lokale Versuche übernehmen', `${missing.length} lokal gespeicherte Versuche in den Ordner „${handle.name}“ kopieren?`, 'Kopieren')) {
+    for (const e of missing) { S.entries.set(e.id, e); await persist(e); }
+  }
+  updateChips(); renderHome();
+}
+async function pickDir() {
+  try { await useDir(await showDirectoryPicker({ mode: 'readwrite', id: 'eln' }), true); toast('Ordner verbunden.'); }
+  catch (e) { if (e.name !== 'AbortError') toast('Ordner konnte nicht verbunden werden: ' + e.message); }
+}
+async function disconnectDir() { await saveNow(); S.dir = null; await idb.del('kv', 'dir'); await loadAll(); updateChips(); renderHome(); }
+async function rescan(silent) {
+  if (!S.dir || S.dirty) return;
+  const curId = S.cur && S.cur.id, curRev = S.cur && S.cur.rev;
+  await loadAll();
+  if (silent) { if (curId) S.cur = S.entries.get(curId) || null; return; }
+  if (curId) { const n = S.entries.get(curId); if (!n) renderHome(); else if (n.rev !== curRev) { S.cur = null; openEntry(curId); } else { S.cur = n; openEntry(curId); } }
+  else renderHome();
+}
+window.addEventListener('focus', () => { if (S.dir && !S.dirty && Date.now() - S.lastScan > 20000 && !document.querySelector('dialog[open]') && !$('#main').contains(document.activeElement)) rescan(); });
+
+async function exportAll() {
+  await saveNow();
+  download(`ELN-Backup_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ format: 'eln-backup', version: 1, exported: nowISO(), entries: [...S.entries.values()], templates: S.templates }), 'application/json');
+}
+async function importFile(file) {
+  let data; try { data = JSON.parse(await file.text()); } catch (e) { return toast('Datei ist kein gültiges JSON.'); }
+  const list = data.format === 'eln-backup' ? data.entries : (data.id && data.sections ? [data] : null);
+  if (!list) return toast('Unbekanntes Dateiformat.');
+  await saveNow();
+  let n = 0, skipped = 0;
+  for (const e of list) {
+    if (!e || !e.id || !e.sections) continue;
+    normalize(e);
+    const have = S.entries.get(e.id);
+    if (have && have.rev >= e.rev) { skipped++; continue; }
+    if (S.dir) S.diskRev.set(e.id, have ? have.rev : undefined);
+    S.entries.set(e.id, e); await persist(e); n++;
+  }
+  for (const t of data.templates || []) if (t && t.name && !S.templates.some(x => x.name === t.name)) S.templates.push(t);
+  await saveTemplates();
+  toast(`${n} importiert` + (skipped ? `, ${skipped} übersprungen (bereits aktuell)` : '') + '.'); renderHome();
+}
+function storageDialog() {
+  dialog('Speicherort & Backup', (f, close) => {
+    const inp = h('input', { type: 'file', accept: '.json,application/json', style: 'display:none', onchange: ev => { const file = ev.target.files[0]; close(); if (file) importFile(file); } });
+    f.append(
+      h('p', null, S.dir ? `Aktuell: gemeinsamer Ordner „${S.dir.name}“.` : 'Aktuell: lokal in diesem Browser (nur auf diesem PC/Profil sichtbar).'),
+      canDir ? h('p', null, 'Für die Arbeit im Team einen Ordner auf dem Netzlaufwerk wählen. Jeder Versuch wird dort als eigene Datei gespeichert; alle Kolleginnen und Kollegen verbinden denselben Ordner.')
+        : h('p', { style: 'color:var(--warn)' }, 'Dieser Browser kann keine Ordner verbinden. Bitte Microsoft Edge oder Google Chrome verwenden – oder Daten per Backup-Export/-Import austauschen.'),
+      h('div', { class: 'gridbar' },
+        canDir && h('button', { class: 'primary', onclick: () => { close(); pickDir(); } }, S.dir ? 'Anderen Ordner wählen' : 'Gemeinsamen Ordner verbinden'),
+        S.dir && h('button', { onclick: () => { close(); rescan(); } }, 'Jetzt aktualisieren'),
+        S.dir && h('button', { onclick: () => { close(); disconnectDir(); } }, 'Ordner trennen')),
+      h('p', null, 'Backup: alle Versuche und Vorlagen in eine Datei exportieren bzw. daraus importieren.'),
+      h('div', { class: 'gridbar' }, h('button', { onclick: () => { close(); exportAll(); } }, '⭳ Backup exportieren'), h('button', { onclick: () => inp.click() }, '⭱ Backup / Versuch importieren'), inp));
+  }, [{ label: 'Schließen', value: () => null }]);
+}
+
+// ---------- Benutzer / Kopfzeile ----------
+async function userDialog(first) {
+  const v = await dialog(first ? 'Willkommen im ELN' : 'Benutzer', f => f.append(
+    first && h('p', null, 'Bitte einmalig Namen und Kürzel angeben. Sie erscheinen bei Einträgen, Änderungen und Signaturen.'),
+    field('Name', h('input', { name: 'name', value: S.user ? S.user.name : '', placeholder: 'Vorname Nachname' })),
+    field('Kürzel (2–4 Zeichen, Teil der Versuchs-ID)', h('input', { name: 'kuerzel', value: S.user ? S.user.kuerzel : '', maxlength: '4', placeholder: 'z. B. MM' }))
+  ), [!first && { label: 'Abbrechen', value: () => null }, { label: 'Speichern', cls: 'primary', value: formVals }].filter(Boolean));
+  if (!v) { if (first) return userDialog(true); return; }
+  const k = v.kuerzel.toUpperCase().replace(/[^A-Z0-9ÄÖÜ]/g, '');
+  if (!v.name || k.length < 2) { toast('Bitte Namen und ein Kürzel mit mindestens 2 Zeichen angeben.'); return userDialog(first); }
+  S.user = { name: v.name, kuerzel: k }; localStorage.setItem('eln.user', JSON.stringify(S.user)); updateChips();
+}
+function updateChips() {
+  $('#userChip').textContent = S.user ? '👤 ' + S.user.name : '👤';
+  const c = $('#storeChip'); c.textContent = S.dir ? '📁 ' + S.dir.name : '💾 Lokal'; c.classList.toggle('warn', !S.dir);
+}
+function setTheme(t) { document.documentElement.dataset.theme = t; localStorage.setItem('eln.theme', t); }
+
+// ---------- Start ----------
+(async function init() {
+  setTheme(localStorage.getItem('eln.theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  $('#themeBtn').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  $('#home').onclick = async () => { await saveNow(); renderHome(); };
+  $('#newBtn').onclick = newEntryDialog;
+  $('#userChip').onclick = () => userDialog(false);
+  $('#storeChip').onclick = storageDialog;
+  for (const id of ['q', 'fStatus', 'fProject']) $('#' + id).addEventListener('input', renderList);
+  document.addEventListener('keydown', ev => { if ((ev.ctrlKey || ev.metaKey) && ev.key === 's') { ev.preventDefault(); saveNow(); } });
+
+  await idb.open();
+  if (!S.user) await userDialog(true);
+  updateChips();
+  await loadAll(); renderHome();
+
+  // Zuletzt verbundenen Ordner wieder anbieten (Browser verlangt dafür einen Klick)
+  const saved = canDir ? await idb.get('kv', 'dir').catch(() => null) : null;
+  if (saved) {
+    const perm = saved.queryPermission ? await saved.queryPermission({ mode: 'readwrite' }) : 'granted';
+    if (perm === 'granted') return useDir(saved, false);
+    if (await confirmDlg('Gemeinsamen Ordner verbinden', `Zuletzt wurde der Ordner „${saved.name}“ verwendet. Wieder verbinden?`, 'Verbinden')) {
+      try { if (await saved.requestPermission({ mode: 'readwrite' }) === 'granted') await useDir(saved, false); else toast('Zugriff nicht erlaubt – es werden die lokalen Daten angezeigt.'); }
+      catch (e) { toast('Ordner nicht erreichbar – es werden die lokalen Daten angezeigt.'); }
+    }
+  }
+})();
+</script>
+</body>
+</html>
