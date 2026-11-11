@@ -1,5 +1,83 @@
 {% from "partials/macros.html" import badge, empty with context %}
-<div class="card"><h2 class="card-title">Verknüpfte Versuche ({{ experiments|length }})</h2>
+<div class="card" id="rohstoffe">
+  <div class="card-head"><h2 class="card-title">Rohstoffliste</h2>{% if user.has('edit') %}<button type="button" class="btn btn-sm" data-open-dialog="mat-dialog">+ Rohstoff</button>{% endif %}</div>
+  {% if material_sections %}
+  <table class="table table-compact"><thead><tr><th>ID / Materialnummer</th><th>Bezeichnung</th><th>Lot-Nr. / Charge</th><th>Datum</th><th>Bemerkungen</th><th></th></tr></thead><tbody>
+  {% for section, rows in material_sections.items() %}
+    <tr><th colspan="6">{{ section }}</th></tr>
+    {% for m in rows %}<tr><td>{{ m.material.material_number or m.material.code }}</td><td><a href="/materialien/{{ m.material.id }}">{{ m.material.name }}</a></td><td>{% if m.batch %}<a href="/chargen/{{ m.batch.id }}">{{ m.batch.batch_number }}</a>{% endif %}</td><td>{{ m.entry_date|de_date }}</td><td>{{ m.remark or '' }}</td>
+    <td>{% if user.has('edit') %}<form method="post" action="/auftraege/{{ obj.id }}/rohstoffe/{{ m.id }}/loeschen" class="inline" data-confirm="»{{ m.material.name }}« aus der Rohstoffliste dieses Auftrags entfernen?"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="icon-btn" title="Aus Liste entfernen">✕</button></form>{% endif %}</td></tr>{% endfor %}
+  {% endfor %}</tbody></table>
+  {% else %}{{ empty('Noch keine Rohstoffe eingetragen.') }}{% endif %}
+</div>
+{% if user.has('edit') %}
+<dialog id="mat-dialog" class="dialog"><form method="post" action="/auftraege/{{ obj.id }}/rohstoffe" data-recipe-editor>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <script type="application/json" data-batch-map>{{ batch_map_json|safe }}</script>
+  <h3>Rohstoff zur Liste hinzufügen</h3>
+  <label class="field"><span>Abschnitt</span><select name="section">{% for s in section_names %}<option>{{ s }}</option>{% endfor %}</select></label>
+  <div data-row>
+    <label class="field"><span>Material <em class="req">*</em></span><select name="material_id" required data-material><option value="">– bitte wählen –</option>{% for m in all_materials %}<option value="{{ m.id }}">{{ m.label }}</option>{% endfor %}</select></label>
+    <label class="field"><span>Charge</span><select name="batch_id" data-batch><option value="">–</option></select></label>
+  </div>
+  <label class="field"><span>Datum</span><input type="date" name="entry_date"></label>
+  <label class="field"><span>Bemerkungen</span><input name="remark"></label>
+  <p class="muted small">Fehlt das Material? Zuerst unter Stammdaten → Materialien anlegen.</p>
+  <div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-primary">Hinzufügen</button></div>
+</form></dialog>
+{% endif %}
+
+<div class="card" id="durchfuehrung">
+  <h2 class="card-title">Durchführung</h2>
+  {% if log_entries %}
+  <table class="table table-compact"><thead><tr><th>Datum</th><th>Arbeitsschritt</th><th>von</th><th>Bemerkungen</th></tr></thead><tbody>
+  {% for e in log_entries %}<tr><td class="nowrap">{{ e.entry_date|de_date }}</td><td class="pre">{{ e.step }}</td><td>{{ e.done_by_label }}</td><td>{{ e.remark or '' }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}{{ empty('Noch keine Arbeitsschritte dokumentiert.') }}{% endif %}
+  {% if user.has('edit') %}
+  <form method="post" action="/auftraege/{{ obj.id }}/durchfuehrung" class="form log-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="field w-full"><label>Neuer Arbeitsschritt <em class="req">*</em></label><textarea name="step" rows="2" required placeholder="z. B. Extruder gereinigt (Schnecken gezogen) und wieder zusammengebaut"></textarea></div>
+      <div class="field w-third"><label>von (Kürzel)</label><input name="by" value="{{ user.short_name or user.username }}"></div>
+      <div class="field w-third"><label>Datum</label><input type="date" name="entry_date" value="{{ today().isoformat() }}"></div>
+      <div class="field w-third"><label>Bemerkungen</label><input name="remark"></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-primary btn-sm">Eintragen</button></div>
+  </form>
+  {% endif %}
+</div>
+
+<div class="card" id="zusammensetzungen">
+  <div class="card-head"><h2 class="card-title">Zusammensetzungen (Rezepturen des Auftrags)</h2>{% if user.has('create') %}<a class="btn btn-sm" href="/rezepturen/neu?order_id={{ obj.id }}">+ Rezeptur</a>{% endif %}</div>
+  {% for g in matrices %}
+  <h3 class="sub">{{ g.type }} ({{ g.matrix.recipes|length }})</h3>
+  <div class="table-scroll"><table class="table table-compact matrix-table">
+    <thead><tr><th class="sticky-col">Komponente [Gew.-%]</th>{% for r in g.matrix.recipes %}<th class="num"><a href="/rezepturen/{{ r.id }}" title="{{ r.code }} Rev. {{ r.revision }}{% if r.description %} – {{ r.description }}{% endif %}">{{ r.name }}</a></th>{% endfor %}</tr></thead>
+    <tbody>{% for row in g.matrix.rows %}<tr><td class="sticky-col"><a href="/materialien/{{ row.material.id }}">{{ row.material.name }}</a>{% if row.source_recipe %} <a class="badge badge-info" href="/rezepturen/{{ row.source_recipe.id }}" title="Zusammensetzung dieses Masterbatches anzeigen">Rezeptur</a>{% endif %}</td>
+      {% for v in row.cells %}<td class="num {% if v is none %}cell-empty{% endif %}">{{ v|de_num(3) if v is not none else '' }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    <tfoot><tr><th class="sticky-col">Summe</th>{% for t in g.matrix.totals %}<th class="num {% if (t - 100)|abs > 0.01 %}text-danger{% endif %}">{{ t|de_num(2) }}</th>{% endfor %}</tr></tfoot>
+  </table></div>
+  {% if g.resolved %}
+  <details class="resolved"><summary>Aufgelöste Zusammensetzung – Masterbatche in ihre Rohstoffe zerlegt</summary>
+  <div class="table-scroll"><table class="table table-compact matrix-table">
+    <thead><tr><th class="sticky-col">Rohstoff [Gew.-%]</th>{% for r in g.resolved.recipes %}<th class="num">{{ r.name }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in g.resolved.rows %}<tr><td class="sticky-col">{{ row.material.name }}</td>{% for v in row.cells %}<td class="num {% if v is none %}cell-empty{% endif %}">{{ v|de_num(4) if v is not none else '' }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  </table></div></details>
+  {% endif %}
+  {% else %}{{ empty('Noch keine Rezepturen zu diesem Auftrag. Über »+ Rezeptur« anlegen (Art: Masterbatch, Compound, Pulvermischung).') }}{% endfor %}
+</div>
+
+<div class="card" id="extrusion">
+  <h2 class="card-title">Extrusionsprotokolle (Compoundierläufe)</h2>
+  {% if compounding_runs %}
+  <div class="table-scroll"><table class="table table-compact"><thead><tr><th>Lauf</th><th>Rezeptur</th><th>Versuch</th><th>Start</th><th class="num">Durchsatz kg/h</th><th class="num">Drehzahl</th><th class="num">Drehmoment %</th><th class="num">Druck bar</th><th class="num">T Masse °C</th><th>Status</th></tr></thead><tbody>
+  {% for r in compounding_runs %}<tr><td><a href="/module/compoundierung/{{ r.id }}">{{ r.code }}</a></td><td>{{ r.title }}</td><td><a href="/versuche/{{ r.experiment.id }}">{{ r.experiment.code }}</a></td><td>{{ r.start_time|de_datetime }}</td><td class="num">{{ r.throughput_actual|de_num }}</td><td class="num">{{ r.screw_speed|de_num }}</td><td class="num">{{ r.torque|de_num }}</td><td class="num">{{ r.melt_pressure|de_num }}</td><td class="num">{{ r.melt_temperature|de_num }}</td><td>{{ badge(r.status) }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}{{ empty('Noch keine Extrusionsprotokolle. Läufe werden auf der Seite des jeweiligen Versuchs (unten) über »+ Compoundierlauf« erfasst oder aus dem Excel-Protokoll importiert.') }}{% endif %}
+</div>
+
+<div class="card" id="versuche"><h2 class="card-title">Verknüpfte Versuche ({{ experiments|length }})</h2>
 {% if experiments %}<table class="table"><thead><tr><th>ID</th><th>Rev.</th><th>Bezeichnung</th><th>Fachbereich</th><th>Verantwortlich</th><th>Geplant</th><th>Status</th></tr></thead><tbody>
 {% for e in experiments %}<tr><td><a href="/versuche/{{ e.id }}">{{ e.code }}</a></td><td>{{ e.revision }}</td><td>{{ e.title }}</td><td>{{ e.department or '' }}</td><td>{{ e.responsible.full_name if e.responsible else '' }}</td><td>{{ e.planned_date|de_date }}</td><td>{{ badge(e.status) }}</td></tr>{% endfor %}
 </tbody></table>{% else %}{{ empty('Noch keine Versuche.') }}{% endif %}</div>

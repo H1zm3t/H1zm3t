@@ -46,3 +46,48 @@ ATTACHMENT_CATEGORIES = (
     "Prüfvorschrift", "Kalibrierzertifikat", "Wartungsprotokoll", "Kundenunterlage", "Schneckenkonfiguration",
     "Prozessdatei", "Sonstiges",
 )
+
+# --- Auftragsplanung (entspricht den Listen im Excel-Formular »Compoundierplan«) ---
+ACTIVITY_CATEGORIES: dict[str, tuple[str, ...]] = {
+    "Vorbereitung und Rohstoffe": (
+        "Auftrag prüfen", "Auftragsdetails klären", "Rohstoffverfügbarkeit prüfen", "Rohstoffe bereitstellen",
+        "Rohstoffe konditionieren", "Rohstofffeuchtigkeit bestimmen", "Vormischung herstellen", "Dryblend herstellen",
+        "Material mahlen", "Probe ziehen", "Material fotografieren"),
+    "Compoundierung und Verarbeitung": (
+        "Compoundherstellung Extruder", "Masterbatchherstellung", "Additivmischung herstellen", "Reagenzglasguss",
+        "RIM", "Handguss", "Gusspolyamid", "Sonstige Verarbeitung"),
+    "Spritzguss und Prüfkörper": (
+        "Spritzguss Zugprüfkörper", "Spritzguss Schlagprüfkörper", "Spritzguss Biegeprüfkörper", "Spritzguss Spirale",
+        "Spritzguss 3-Stufen/Glatt-Platte", "Spritzguss 3-Stufen/3-Stufen-Platte", "Spritzguss Schrumpfplatte",
+        "Spritzguss sonstiger Prüfkörper"),
+    "Konditionierung und Alterung": (
+        "Normklima", "Feuchte-Konditionierung", "Trocknung", "Klimaofenlagerung", "Ofenalterung Zugprüfkörper",
+        "Ofenalterung Schlagprüfkörper", "Ofenalterung Biegeprüfkörper", "Autoklavenlagerung", "Medienlagerung",
+        "Dachlagerung", "sonstige Alterung"),
+    "Mechanische Prüfungen": (
+        "Zugeigenschaften", "Biegeprüfung", "Charpy ungekerbt", "Charpy gekerbt", "Izod ungekerbt", "Izod gekerbt",
+        "Härte", "sonstige mechanische Prüfung"),
+    "Rheologische Untersuchungen": (
+        "MVR / MFI", "HKR", "Fließspirale", "Drehmomentmessung", "Viskositätsverlauf",
+        "sonstige rheologische Untersuchung"),
+    "Analytik": (
+        "DSC", "TGA", "IR", "RFA", "rV", "iV", "AEG-Bestimmung", "UV-VIS", "Partikelgrößenverteilung",
+        "Feuchtigkeitsbestimmung", "L*a*b*-Messung", "Glanzmessung", "Mikroskopie/Fotodokumentation",
+        "sonstige Analytik"),
+    "Optische und visuelle Bewertung": (
+        "Granulat fotografieren", "Prüfkörper fotografieren", "Oberfläche fotografieren", "Farbe visuell bewerten",
+        "Ablagerungen bewerten", "Verfärbung bewerten", "Schlieren bewerten", "Glanz messen", "L*a*b* messen",
+        "Mikroskopische Untersuchung"),
+    "Dokumentation und Abschluss": (
+        "Rohdaten übertragen", "Rohdaten prüfen", "Bilder ablegen", "Ergebnisse auswerten",
+        "Ergebnisübersicht erstellen", "Bericht erstellen", "Auftraggeber informieren", "Dokumentation vollständig",
+        "Auftrag abschließen"),
+}
+ACTIVITY_STATUS = (
+    "nicht erforderlich", "geplant", "wartet auf Voraussetzung", "bereit", "in Bearbeitung",
+    "praktisch abgeschlossen", "Dokumentation offen", "abgeschlossen", "zurückgestellt", "entfallen",
+)
+ACTIVITY_DONE = ("abgeschlossen",)
+ACTIVITY_NOT_COUNTED = ("nicht erforderlich", "entfallen")
+MATERIAL_SECTIONS = ("Rohstoffe für Compound Herstellung", "Rohstoffe für MB Herstellung", "weitere benötigte Rohstoffe")
+RECIPE_TYPES = ("Compound", "Masterbatch", "Pulvermischung", "Additivmischung", "Sonstige")

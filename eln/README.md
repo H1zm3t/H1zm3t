@@ -44,6 +44,13 @@ Suche, Auswertungen, Berichte, Datensicherung – mit dem Fachmodul **Compoundie
 - **Projekte, Aufträge, Versuchsreihen, Versuche** mit automatischer ID (z. B. `A-2026-0001`, `V-2026-0001`),
   Verantwortlichen/Beteiligten, Prioritäten, Vertraulichkeitsstufen, Schlagwörtern, Prozessparametern,
   Beobachtungen, Ergebnissen, Bewertung, Schlussfolgerung, Folgeaktivitäten.
+- **Auftrags-Dashboard mit Arbeitsplan** (ersetzt das Excel-Formular »Compoundierplan«): Tätigkeiten nach Kategorien
+  mit Zuständigkeit, Terminen und Status, automatisch berechneter Fortschritt und Status je Kategorie, Rohstoffliste,
+  Durchführungsprotokoll, Zusammensetzungen aller Masterbatche, Pulvermischungen und Compounds als Matrix – inklusive
+  »aufgelöster« Zusammensetzung (Masterbatche in ihre Rohstoffe zerlegt) – sowie die Extrusionsprotokolle.
+- **Import des Excel-Auftragsformulars** (Compoundierplan F030): liest die Reiter Auftrag, Auftragdetails,
+  Rohstoffliste, Durchführung, Rezeptur-MB, Rezeptur-Comp, Extr.-Prot.MB, Extr.-Prot.Comp und die Mischungsblätter.
+  Beliebig oft wiederholbar – der Auftrag wird über die AWT-Nummer erkannt und aktualisiert.
 - **Status- und Freigabeprozess**: Entwurf → in Bearbeitung → abgeschlossen → zur Prüfung → (geprüft →) freigegeben;
   Zurückweisung mit Begründung, optionale zweite Freigabe durch die Abteilungsleitung, unabhängige Prüfung (Vier-Augen),
   Sperre ab Einreichung, Änderungen nach Freigabe nur über **neue Revision** mit Änderungsgrund; eingefrorene Stände
@@ -170,6 +177,13 @@ Beispieldaten nur in einer Test- oder Schulungsinstallation anlegen.
 
 - **Auftrag anlegen:** *+ Neu → Auftrag*. Pflichtfelder sind mit * markiert. Auf der Auftragsseite direkt Versuche,
   Proben, Rezepturen oder Versuchsreihen anlegen; Auftragsdossier als PDF/ZIP exportieren.
+- **Excel-Auftragsformular importieren:** *Aufträge → Compoundierplan (Excel) importieren* → Datei wählen →
+  Vorschau prüfen → bestätigen. Später dieselbe (weitergeführte) Datei erneut hochladen, um den Auftrag zu
+  aktualisieren. Achtung: Tätigkeiten und Rohstoffliste werden dabei durch den Stand der Datei ersetzt.
+- **Auftrag ohne Excel planen:** Auftrag anlegen (AWT-Nr. im Feld »AWT-Nr. / externe Auftragsnummer«) → auf der
+  Auftragsseite *+ Tätigkeit* (Kategorie wählen, Tätigkeit aus der Vorschlagsliste), Rohstoffe und Arbeitsschritte
+  eintragen, Rezepturen mit *+ Rezeptur* anlegen (Art: Masterbatch, Compound, Pulvermischung). In der Tabelle setzen
+  ▶ und ✓ den Status »in Bearbeitung« bzw. »abgeschlossen« mit dem heutigen Datum.
 - **Versuch dokumentieren:** Versuch anlegen → *Bearbeitung starten* → Felder, Prozessparameter, Proben, Messdaten,
   Anhänge ergänzen → *Abschließen* (Ergebnisse und Schlussfolgerung sind Pflicht) → *Zur Prüfung einreichen*.
 - **Prüfen/Freigeben:** Prüfer sehen eingereichte Versuche im Dashboard → *Prüfung bestanden* oder *Zurückweisen*
@@ -286,7 +300,7 @@ Laufzeitdaten (`data/`, `backups/`, `.env`, `.venv/`) sind von der Versionsverwa
 ```bat
 .venv\Scripts\python.exe -m pytest -q
 ```
-74 automatisierte Tests decken Anmeldung, Rollen/Rechte, Aufträge, Versuche, Rezeptursumme, Datei-Upload, Prüfsummen,
+81 automatisierte Tests decken Anmeldung, Rollen/Rechte, Aufträge, Versuche, Rezeptursumme, Datei-Upload, Prüfsummen,
 Versionen, Freigabeprozess, Audit Trail (inkl. Manipulationserkennung), Suche, Import/Export, Dossiers, Module und
 Datensicherung/Wiederherstellung ab. Für die manuelle Abnahme: [docs/ABNAHME_CHECKLISTE.md](docs/ABNAHME_CHECKLISTE.md).
 

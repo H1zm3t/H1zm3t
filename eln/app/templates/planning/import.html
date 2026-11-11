@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf, badge with context %}
+{% block title %}Compoundierplan importieren{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Aufträge', '/auftraege'), ('Compoundierplan importieren', none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Compoundierplan (Excel) importieren</h1></div>
+{% if not plan %}
+<div class="grid-2">
+<form method="post" enctype="multipart/form-data" class="card form">{{ csrf() }}
+  <h2 class="card-title">Excel-Auftragsformular hochladen</h2>
+  <label class="field"><span>Datei (.xlsx) <em class="req">*</em></span><input type="file" name="file" accept=".xlsx,.xlsm" required></label>
+  <p class="muted small">Zuerst sehen Sie eine Vorschau. Gespeichert wird erst nach Ihrer Bestätigung.</p>
+  <div class="form-actions"><button class="btn btn-primary">Datei prüfen</button></div>
+</form>
+<div class="card"><h2 class="card-title">Was wird übernommen?</h2>
+<table class="table table-compact"><tbody>
+<tr><td>Auftrag</td><td>Auftraggeber, Anfragedatum, Ansprechperson, Cluster, Hintergrund, Auftrag, Bemerkungen, AWT-Nr., Prüfvermerk</td></tr>
+<tr><td>Auftragdetails</td><td>Alle Tätigkeiten mit Kategorie, Zuständigkeit, Terminen und Status → Arbeitsplan</td></tr>
+<tr><td>Gesamtstatus</td><td>Wird nicht gelesen, sondern aus den Tätigkeiten berechnet</td></tr>
+<tr><td>Rohstoffliste</td><td>Rohstoffe mit Materialnummer und Charge (fehlende Stammdaten werden angelegt)</td></tr>
+<tr><td>Durchführung</td><td>Arbeitsschritte mit Kürzel und Datum</td></tr>
+<tr><td>Rezeptur-MB, Rezeptur-Comp</td><td>Zusammensetzungen in Gew.-% und Einwaagen in g; Masterbatche werden mit den Compounds verknüpft</td></tr>
+<tr><td>Mischungsblätter</td><td>Pulvervormischungen mit Soll- und Ist-Einwaage</td></tr>
+<tr><td>Extr.-Prot.MB / Comp</td><td>Ausgefüllte Protokollspalten → Compoundierläufe</td></tr>
+</tbody></table>
+<p class="muted small">Dieselbe Datei kann beliebig oft erneut importiert werden: Der Auftrag wird über die AWT-Nummer erkannt und auf den Stand der Datei gebracht. Die Datei wird am Auftrag als Anhang abgelegt.</p></div>
+</div>
+{% else %}
+<div class="alert {% if pv.order %}alert-warning{% else %}alert-success{% endif %}">
+  {% if pv.order %}Der Auftrag <a href="/auftraege/{{ pv.order.id }}"><strong>{{ pv.order.code }}</strong></a> mit der AWT-Nr. {{ plan.awt_number }} existiert bereits und wird <strong>aktualisiert</strong>.
+  {% if pv.existing_activities %}Die {{ pv.existing_activities }} vorhandenen Tätigkeiten und die Rohstoffliste werden durch den Stand der Datei ersetzt; Änderungen, die nur im ELN gemacht wurden, gehen dabei verloren.{% endif %}
+  {% else %}Es wird ein <strong>neuer Auftrag</strong> mit der AWT-Nr. {{ plan.awt_number }} angelegt.{% endif %}
+</div>
+{% for w in plan.warnings %}<div class="alert alert-warning">{{ w }}</div>{% endfor %}
+<div class="grid-2">
+<div class="card"><h2 class="card-title">Auftrag AWT {{ plan.awt_number }}</h2><dl class="kv-grid">
+  <div class="kv"><dt>Auftraggeber / Kunde</dt><dd>{{ plan.client or '–' }}</dd></div>
+  <div class="kv"><dt>Anfrage am</dt><dd>{{ plan.request_date|de_date or '–' }}</dd></div>
+  <div class="kv"><dt>Ansprechperson</dt><dd>{{ plan.contact_person or '–' }}</dd></div>
+  <div class="kv"><dt>Cluster</dt><dd>{{ plan.cluster or '–' }}</dd></div>
+  <div class="kv"><dt>Verantwortlich</dt><dd>{{ plan.responsible or '–' }}</dd></div>
+  <div class="kv"><dt>Geprüft</dt><dd>{{ plan.checked_by or '–' }} {{ plan.checked_on|de_date }}</dd></div>
+  <div class="kv kv-full"><dt>Hintergrund und Ziel</dt><dd class="pre">{{ plan.background or '–' }}</dd></div>
+  <div class="kv kv-full"><dt>Auftrag</dt><dd class="pre">{{ plan.task or '–' }}</dd></div>
+  <div class="kv kv-full"><dt>Bemerkungen</dt><dd class="pre">{{ plan.fea_remarks or '–' }}</dd></div>
+</dl></div>
+<div class="card"><h2 class="card-title">Umfang</h2>
+<div class="kpis">
+  <div class="kpi"><span>Tätigkeiten</span><strong>{{ plan.activities|length }}</strong><small>{{ pv.summary.done }} erledigt ({{ pv.summary.progress|de_num(1) }} %)</small></div>
+  <div class="kpi"><span>Rohstoffe</span><strong>{{ plan.materials|length }}</strong></div>
+  <div class="kpi"><span>Arbeitsschritte</span><strong>{{ plan.log|length }}</strong></div>
+  <div class="kpi"><span>Extrusionsprotokolle</span><strong>{{ plan.protocols|length }}</strong><small>ausgefüllte Spalten</small></div>
+</div>
+{% for t, rs in pv.recipes_by_type.items() %}<p><strong>{{ rs|length }} × {{ t }}:</strong> {{ rs|map(attribute='name')|join(', ') }}</p>{% endfor %}
+{% if pv.new_materials %}<div class="alert alert-info"><strong>{{ pv.new_materials|length }} Materialien werden neu angelegt:</strong> {{ pv.new_materials|join(', ') }}</div>{% endif %}
+<p class="muted small">Gelesene Reiter: {{ plan.sheets_found|join(', ') }}</p>
+</div></div>
+<div class="card"><h2 class="card-title">Tätigkeiten</h2>
+<table class="table table-compact"><thead><tr><th>Nr.</th><th>Kategorie</th><th>Tätigkeit</th><th>Probe / Rezeptur</th><th>Zuständig</th><th>Erledigt am</th><th>Status</th></tr></thead><tbody>
+{% for a in plan.activities %}<tr><td>{{ loop.index }}</td><td>{{ a.category }}</td><td>{{ a.activity }}</td><td>{{ a.subject or '' }}</td><td>{{ a.responsible or '' }}</td><td>{{ a.done_on|de_date }}</td><td>{{ a.status or 'offen' }}</td></tr>{% endfor %}
+</tbody></table></div>
+<form method="post" class="card">{{ csrf() }}<input type="hidden" name="token" value="{{ token }}"><input type="hidden" name="filename" value="{{ filename }}">
+  <div class="form-actions"><a class="btn" href="/auftraege/compoundierplan">Abbrechen</a><button class="btn btn-primary">{% if pv.order %}Auftrag aktualisieren{% else %}Auftrag anlegen{% endif %}</button></div>
+</form>
+{% endif %}
+{% endblock %}

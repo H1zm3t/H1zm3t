@@ -93,9 +93,9 @@ def create_app(run_init: bool = True) -> FastAPI:
 
     from .web import detail_hooks  # noqa: F401 - registriert Hooks
     from .web import (admin, analytics, attachments, audit_views, auth_views, dashboard, experiments, io_views,
-                      records, recipes, search_views, api)
+                      planning, records, recipes, search_views, api)
 
-    for module in (auth_views, dashboard, experiments, recipes, records, attachments, search_views, analytics,
+    for module in (auth_views, dashboard, experiments, planning, recipes, records, attachments, search_views, analytics,
                    audit_views, io_views, admin, api):
         app.include_router(module.router)
 

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import crumbs, csrf with context %}
+{% block title %}Tätigkeit{% endblock %}
+{% block breadcrumbs %}{{ crumbs([('Aufträge', '/auftraege'), (order.code, '/auftraege/' ~ order.id|string), ('Tätigkeit ' ~ act.position, none)]) }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Tätigkeit {{ act.position }} bearbeiten</h1></div>
+<form method="post" class="card form" data-activity-form>{{ csrf() }}
+  <script type="application/json" data-activity-map>{{ activity_map_json|safe }}</script>
+  <div class="form-grid">
+    <div class="field w-half"><label>Kategorie <em class="req">*</em></label><select name="category" required data-activity-category>{% for c in categories %}<option {% if c == act.category %}selected{% endif %}>{{ c }}</option>{% endfor %}{% if act.category not in categories %}<option selected>{{ act.category }}</option>{% endif %}</select></div>
+    <div class="field w-half"><label>Tätigkeit <em class="req">*</em></label><input name="activity" required value="{{ act.activity }}" list="activity-list" autocomplete="off"><datalist id="activity-list"></datalist></div>
+    <div class="field w-half"><label>Probe / Rezeptur</label><input name="subject" value="{{ act.subject or '' }}"></div>
+    <div class="field w-half"><label>Zuständig (Kürzel oder Name)</label><input name="responsible" value="{{ act.responsible_label }}"></div>
+    <div class="field w-third"><label>Geplant am</label><input type="date" name="planned_on" value="{{ act.planned_on or '' }}"></div>
+    <div class="field w-third"><label>Begonnen am</label><input type="date" name="started_on" value="{{ act.started_on or '' }}"></div>
+    <div class="field w-third"><label>Erledigt am</label><input type="date" name="done_on" value="{{ act.done_on or '' }}"></div>
+    <div class="field w-third"><label>Dokumentiert am</label><input type="date" name="documented_on" value="{{ act.documented_on or '' }}"></div>
+    <div class="field w-third"><label>Status</label><select name="status"><option value="">– offen –</option>{% for s in statuses %}<option {% if s == act.status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select><small class="help">»abgeschlossen« setzt fehlende Datumsangaben automatisch auf heute.</small></div>
+    <div class="field w-full"><label>Ergebnis / Ablage</label><input name="result" value="{{ act.result or '' }}"></div>
+    <div class="field w-full"><label>Bemerkung</label><textarea name="remark" rows="2">{{ act.remark or '' }}</textarea></div>
+  </div>
+  <div class="form-actions"><a class="btn" href="/auftraege/{{ order.id }}#arbeitsplan">Abbrechen</a><button class="btn btn-primary">Speichern</button></div>
+</form>
+<div class="card"><h2 class="card-title">Tätigkeit entfernen</h2>
+<form method="post" action="/auftraege/{{ order.id }}/taetigkeiten/{{ act.id }}/loeschen" class="form">{{ csrf() }}
+  <label class="field"><span>Begründung <em class="req">*</em></span><input name="reason" required></label>
+  <p class="muted small">Besser: Status »entfallen« oder »nicht erforderlich« setzen – dann bleibt die Tätigkeit sichtbar und zählt nicht zum Fortschritt.</p>
+  <div class="form-actions"><button class="btn btn-danger">Entfernen</button></div></form></div>
+{% endblock %}

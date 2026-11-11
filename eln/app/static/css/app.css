@@ -244,3 +244,13 @@ body.public { display: flex; align-items: center; justify-content: center; min-h
   .tab-panel { display: block !important; } .card { box-shadow: none; break-inside: avoid; }
   body { background: #fff; }
 }
+/* Auftragsplanung */
+.jump-nav { font-size: .85rem; color: var(--muted); margin-top: .4rem; }
+.row-done td { color: var(--muted); }
+.dialog-wide { width: min(760px, 94vw); }
+.matrix-table th, .matrix-table td { white-space: nowrap; }
+.matrix-table .sticky-col { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 220px; white-space: normal; }
+.matrix-table thead .sticky-col, .matrix-table tfoot .sticky-col { background: var(--surface-2); }
+.cell-empty { background: var(--surface-2); }
+details.resolved { margin: .5rem 0 1rem; } details.resolved summary { cursor: pointer; color: var(--primary); font-weight: 500; margin-bottom: .4rem; }
+.log-form { margin-top: .8rem; border-top: 1px solid var(--border); padding-top: .8rem; }

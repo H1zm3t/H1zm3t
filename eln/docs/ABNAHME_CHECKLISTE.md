@@ -92,5 +92,14 @@ Prüfer: ______________________  Datum: ____________  Version: 1.0.0
 - [ ] L4 Wiederherstellung über die Oberfläche nur als Administrator und nur mit Eingabe „WIEDERHERSTELLEN“.
 - [ ] L5 Vor einer Datenbankmigration (neue Version) wird automatisch eine Sicherung angelegt.
 
+## N. Auftragsplanung und Compoundierplan-Import
+- [ ] N1 *Aufträge → Compoundierplan (Excel) importieren*: Vorschau zeigt AWT-Nr., Tätigkeiten, Rezepturen und neu anzulegende Materialien; nach Bestätigung existiert der Auftrag.
+- [ ] N2 Auftragsseite zeigt Arbeitsplan, Fortschritt (wie im Excel-Reiter Auftragdetails), Status nach Kategorien (wie Reiter Gesamtstatus), Rohstoffliste, Durchführung.
+- [ ] N3 Zusammensetzungen: Matrix für Masterbatche, Pulvermischungen und Compounds stimmt mit den Excel-Reitern überein (Stichprobe); Summe je Rezeptur 100 %; »Aufgelöste Zusammensetzung« zerlegt Masterbatche in Rohstoffe.
+- [ ] N4 Dieselbe Datei erneut importieren: keine doppelten Aufträge, Rezepturen oder Materialien.
+- [ ] N5 Weitergeführte Datei importieren (mehr erledigte Tätigkeiten): Fortschritt aktualisiert, Datei als neue Version am Auftrag.
+- [ ] N6 Ohne Excel: Tätigkeit hinzufügen (Vorschläge je Kategorie), mit ✓ abschließen, Arbeitsschritt und Rohstoff eintragen.
+- [ ] N7 Ausgefülltes Extrusionsprotokoll wird als Compoundierlauf am Versuch »…herstellung AWT …« angelegt.
+
 ## M. Automatisierte Tests
 - [ ] M1 `.venv\Scripts\python.exe -m pytest -q` → alle Tests bestanden.

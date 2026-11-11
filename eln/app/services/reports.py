@@ -202,6 +202,36 @@ def order_pdf(d: dict) -> bytes:
                    _kv_table({"Status": d["Status"], "Version": d["Version"], **d["Stammdaten"]}, st)]
     _text_block("Aufgabenstellung", d["Aufgabenstellung"], st, story)
     _text_block("Zielsetzung", d["Zielsetzung"], st, story)
+    if d.get("Bemerkungen"):
+        _text_block("Bemerkungen", d["Bemerkungen"], st, story)
+    plan = d.get("Planung") or {}
+    if plan.get("Arbeitsplan"):
+        sm = plan["Zusammenfassung"]
+        story.append(_p("Arbeitsplan", st["h2"]))
+        story.append(_p(f"Fortschritt: {sm['done']} von {sm['total']} Tätigkeiten erledigt ({fmt(sm['progress'])} %) · "
+                        f"Gesamtstatus: {sm['status']}", st["base"]))
+        widths = [8, 34, 38, 22, 16, 17, 17, 17, 11]
+        heads = list(plan["Arbeitsplan"][0].keys())
+        story.append(_grid(heads, [[a[h] for h in heads] for a in plan["Arbeitsplan"]], st, [w * mm for w in widths]))
+        story.append(_p("Status nach Kategorien", st["h3"]))
+        story.append(_list_of_dicts(plan["Status nach Kategorien"], st))
+    if plan.get("Rohstoffliste"):
+        story.append(_p("Rohstoffliste", st["h2"]))
+        story.append(_list_of_dicts(plan["Rohstoffliste"], st))
+    if plan.get("Durchführung"):
+        story.append(_p("Durchführung", st["h2"]))
+        story.append(_grid(["Datum", "Arbeitsschritt", "von", "Bemerkung"],
+                           [[e["Datum"], e["Arbeitsschritt"], e["von"], e["Bemerkung"]] for e in plan["Durchführung"]],
+                           st, [22 * mm, 100 * mm, 18 * mm, 40 * mm]))
+    for comp in plan.get("Zusammensetzungen", []):
+        names = comp["Rezepturen"]
+        for start in range(0, len(names), 8):  # höchstens 8 Rezepturen je Tabelle (Seitenbreite)
+            part = names[start:start + 8]
+            title = f"Zusammensetzung {comp['Art']} [Gew.-%]" + (f" ({start + 1}–{start + len(part)})" if len(names) > 8 else "")
+            rows = [[r[0]] + r[1 + start:1 + start + 8] for r in comp["Zeilen"] if any(v for v in r[1 + start:1 + start + 8])]
+            rows.append(["Summe"] + comp["Summen"][start:start + 8])
+            w = [52 * mm] + [128 * mm / len(part)] * len(part)
+            story.append(KeepTogether([_p(title, st["h3"]), _grid(["Komponente"] + part, rows, st, w)]))
     story.append(_p("Versuche", st["h2"]))
     story.append(_list_of_dicts([{"ID": e["Kennung"], "Rev.": e["Revision"], "Bezeichnung": e["Stammdaten"]["Bezeichnung"],
                                   "Status": e["Status"]} for e in d["Versuche"]], st))

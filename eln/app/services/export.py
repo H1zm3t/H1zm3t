@@ -234,15 +234,48 @@ def order_dossier(db: Session, user: User, order: Order) -> dict:
             "Verantwortlich": order.responsible.full_name if order.responsible else None,
             "Beteiligte": ", ".join(u.full_name for u in order.participants),
             "Erstellt": de_datetime(order.created_at), "Termin": de_date(order.due_date),
+            "Anfrage am": de_date(order.request_date), "Ansprechperson": order.contact_person,
+            "Cluster": order.cluster, "Geprüft": " ".join(x for x in (order.checked_by, de_date(order.checked_on)) if x),
             "Vertraulichkeit": order.confidentiality, "Schlagwörter": order.tags,
         },
         "Aufgabenstellung": order.task_description, "Zielsetzung": order.objective,
+        "Bemerkungen": order.internal_remarks,
+        "Planung": _order_planning(db, order),
         "Versuche": experiments,
         "Proben": [{"ID": s.code, "Bezeichnung": s.name, "Art": s.sample_type, "Status": s.status} for s in samples],
         "Anhänge": [{"Datei": a.original_filename, "Version": a.version, "SHA-256": a.sha256, "Status": a.status,
                      "_path": a.storage_path, "_uid": a.file_uid, "_ext": a.extension}
                     for a in _attachments(db, user, "order", order.id)],
         "Audit-Trail-Auszug": _audit_excerpt(db, "order", order.id),
+    }
+
+
+def _order_planning(db: Session, order: Order) -> dict:
+    """Arbeitsplan, Rohstoffliste, Durchführung und Zusammensetzungen für das Auftragsdossier."""
+    from . import planning
+
+    acts = planning.activities(db, order.id)
+    compositions = []
+    for rtype, recipes in planning.order_recipes(db, order.id).items():
+        m = planning.composition_matrix(recipes)
+        compositions.append({"Art": rtype, "Rezepturen": [r.name for r in recipes],
+                             "Zeilen": [[row["material"].name] + row["cells"] for row in m["rows"]],
+                             "Summen": m["totals"]})
+    return {
+        "Zusammenfassung": planning.summary(acts),
+        "Arbeitsplan": [{"Nr.": a.position, "Kategorie": a.category, "Tätigkeit": a.activity,
+                         "Probe/Rezeptur": a.subject, "Zuständig": a.responsible_label,
+                         "Geplant": de_date(a.planned_on), "Begonnen": de_date(a.started_on),
+                         "Erledigt": de_date(a.done_on), "Status": a.status or "offen"} for a in acts],
+        "Status nach Kategorien": [{"Kategorie": c["category"], "Start": de_date(c["start"]), "Ende": de_date(c["end"]),
+                                    "Tätigkeiten": c["count"], "Erledigt": c["done"], "Status": c["status"]}
+                                   for c in planning.category_status(acts)] if acts else [],
+        "Rohstoffliste": [{"Abschnitt": m.section, "Materialnummer": m.material.material_number or m.material.code,
+                           "Bezeichnung": m.material.name, "Charge": m.batch.batch_number if m.batch else None,
+                           "Bemerkung": m.remark} for m in planning.order_materials(db, order.id)],
+        "Durchführung": [{"Datum": de_date(e.entry_date), "Arbeitsschritt": e.step, "von": e.done_by_label,
+                          "Bemerkung": e.remark} for e in planning.log_entries(db, order.id)],
+        "Zusammensetzungen": compositions,
     }
 
 

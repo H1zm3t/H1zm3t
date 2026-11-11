@@ -85,6 +85,13 @@ class Order(TrackedMixin, Base):
     confidentiality: Mapped[str] = mapped_column(String(30), default="intern", nullable=False)
     tags: Mapped[str | None] = mapped_column(String(300))
     closed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    request_date: Mapped[date | None] = mapped_column(Date)
+    contact_person: Mapped[str | None] = mapped_column(String(120))
+    cluster: Mapped[str | None] = mapped_column(String(120))
+    internal_remarks: Mapped[str | None] = mapped_column(Text)
+    requested_by: Mapped[str | None] = mapped_column(String(60))
+    checked_by: Mapped[str | None] = mapped_column(String(60))
+    checked_on: Mapped[date | None] = mapped_column(Date)
 
     project = relationship("Project", back_populates="orders", lazy="joined")
     responsible = relationship("User", foreign_keys=[responsible_id], lazy="joined")
@@ -129,11 +136,13 @@ class Recipe(TrackedMixin, Base):
     total_unit: Mapped[str] = mapped_column(String(10), default="kg", nullable=False)
     status: Mapped[str] = mapped_column(String(30), default="Entwurf", nullable=False)
     revision_reason: Mapped[str | None] = mapped_column(Text)
+    recipe_type: Mapped[str | None] = mapped_column(String(40))
 
     order = relationship("Order", lazy="joined")
     parent = relationship("Recipe", remote_side=[id], lazy="joined")
     items: Mapped[list["RecipeItem"]] = relationship(
-        back_populates="recipe", cascade="all, delete-orphan", order_by="RecipeItem.position", lazy="selectin"
+        back_populates="recipe", cascade="all, delete-orphan", order_by="RecipeItem.position", lazy="selectin",
+        foreign_keys="RecipeItem.recipe_id",
     )
 
     @property
@@ -160,8 +169,12 @@ class RecipeItem(Base):
     weight_percent: Mapped[float | None] = mapped_column(Float)
     tolerance: Mapped[float | None] = mapped_column(Float)
     remark: Mapped[str | None] = mapped_column(String(300))
+    # Komponente ist selbst eine Rezeptur (z. B. Masterbatch im Compound)
+    source_recipe_id: Mapped[int | None] = mapped_column(
+        ForeignKey("recipes.id", name="fk_recipe_items_source_recipe"))
 
-    recipe = relationship("Recipe", back_populates="items")
+    recipe = relationship("Recipe", back_populates="items", foreign_keys=[recipe_id])
+    source_recipe = relationship("Recipe", foreign_keys=[source_recipe_id])
     material = relationship("Material", lazy="joined")
     batch = relationship("Batch", lazy="joined")
 

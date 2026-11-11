@@ -1,7 +1,14 @@
 {% from "partials/macros.html" import badge with context %}
 <div class="card">
   <div class="card-head">
+    {% if activities %}
+    <div class="progress-wrap">
+      <div class="muted small">Fortschritt: <strong>{{ plan_summary.done }} von {{ plan_summary.total }}</strong> Tätigkeiten erledigt ({{ plan_summary.progress|de_num(1) }} %) · offen: {{ plan_summary.open }} · Gesamtstatus: <strong>{{ plan_summary.status }}</strong></div>
+      <div class="progress"><div class="progress-bar" style="width: {{ plan_summary.progress }}%"></div></div>
+    </div>
+    {% else %}
     <div class="progress-wrap"><div class="muted small">Fortschritt (freigegebene Versuche): {{ progress }} %</div><div class="progress"><div class="progress-bar" style="width: {{ progress }}%"></div></div></div>
+    {% endif %}
     <div class="actions">
       {% if user.has('create') %}
       <a class="btn btn-primary" href="/versuche/neu?order_id={{ obj.id }}">+ Versuch</a>
@@ -9,6 +16,7 @@
       <a class="btn" href="/versuchsreihen/neu?order_id={{ obj.id }}">+ Versuchsreihe</a>
       <a class="btn" href="/rezepturen/neu?order_id={{ obj.id }}">+ Rezeptur</a>
       {% endif %}
+      {% if user.has('import') %}<a class="btn" href="/auftraege/compoundierplan">Aus Excel aktualisieren</a>{% endif %}
       {% if user.has('export') %}
       <div class="dropdown"><button class="btn" type="button" data-dropdown>Auftragsdossier</button>
         <div class="dropdown-menu dropdown-right"><a href="/auftraege/{{ obj.id }}/dossier.pdf" target="_blank" rel="noopener">PDF</a><a href="/auftraege/{{ obj.id }}/dossier.json">JSON</a><a href="/auftraege/{{ obj.id }}/dossier.zip">Komplettexport (ZIP)</a></div></div>
@@ -16,4 +24,51 @@
     </div>
   </div>
   {% if obj.due_date and obj.due_date < today() and obj.status not in ('abgeschlossen','storniert','archiviert') %}<div class="alert alert-warning">Der gewünschte Termin ({{ obj.due_date|de_date }}) ist überschritten.</div>{% endif %}
+  <nav class="jump-nav">Springen zu: <a href="#arbeitsplan">Arbeitsplan</a> · <a href="#status-kategorien">Status nach Kategorien</a> · <a href="#rohstoffe">Rohstoffliste</a> · <a href="#durchfuehrung">Durchführung</a> · <a href="#zusammensetzungen">Zusammensetzungen</a> · <a href="#extrusion">Extrusionsprotokolle</a> · <a href="#versuche">Versuche</a></nav>
 </div>
+
+<div class="card" id="arbeitsplan">
+  <div class="card-head"><h2 class="card-title">Arbeitsplan (Auftragsdetails)</h2>
+    {% if user.has('edit') %}<button type="button" class="btn btn-sm btn-primary" data-open-dialog="act-dialog">+ Tätigkeit</button>{% endif %}</div>
+  {% if activities %}
+  <div class="table-scroll"><table class="table table-compact">
+    <thead><tr><th>Nr.</th><th>Kategorie</th><th>Tätigkeit</th><th>Probe / Rezeptur</th><th>Zuständig</th><th>Geplant</th><th>Begonnen</th><th>Erledigt</th><th>Dokumentiert</th><th>Status</th><th>Ergebnis / Bemerkung</th><th></th></tr></thead>
+    <tbody>{% for a in activities %}
+    <tr class="{% if a.status == 'abgeschlossen' %}row-done{% endif %}">
+      <td>{{ a.position }}</td><td>{{ a.category }}</td><td><strong>{{ a.activity }}</strong></td><td>{{ a.subject or '' }}</td><td>{{ a.responsible_label }}</td>
+      <td class="nowrap">{{ a.planned_on|de_date }}</td><td class="nowrap">{{ a.started_on|de_date }}</td><td class="nowrap">{{ a.done_on|de_date }}</td><td class="nowrap">{{ a.documented_on|de_date }}</td>
+      <td>{% if a.status %}<span class="badge badge-{{ activity_class.get(a.status, 'neutral') }}">{{ a.status }}</span>{% else %}<span class="muted">offen</span>{% endif %}</td>
+      <td>{{ a.result or '' }}{% if a.result and a.remark %} · {% endif %}{{ a.remark or '' }}</td>
+      <td class="nowrap">{% if user.has('edit') %}
+        {% if a.status not in ('in Bearbeitung', 'abgeschlossen') %}<form method="post" action="/auftraege/{{ obj.id }}/taetigkeiten/{{ a.id }}/status" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="in Bearbeitung"><button class="btn btn-sm" title="Als begonnen markieren">▶</button></form>{% endif %}
+        {% if a.status != 'abgeschlossen' %}<form method="post" action="/auftraege/{{ obj.id }}/taetigkeiten/{{ a.id }}/status" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="abgeschlossen"><button class="btn btn-sm" title="Als erledigt markieren">✓</button></form>{% endif %}
+        <a class="btn btn-sm" href="/auftraege/{{ obj.id }}/taetigkeiten/{{ a.id }}" title="Bearbeiten">✎</a>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="empty">Noch keine Tätigkeiten geplant. Über »+ Tätigkeit« anlegen oder einen Compoundierplan (Excel) importieren.</p>{% endif %}
+</div>
+{% if user.has('edit') %}
+<dialog id="act-dialog" class="dialog dialog-wide"><form method="post" action="/auftraege/{{ obj.id }}/taetigkeiten" data-activity-form>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <script type="application/json" data-activity-map>{{ activity_map_json|safe }}</script>
+  <h3>Tätigkeit hinzufügen</h3>
+  <div class="form-grid">
+    <div class="field w-half"><label>Kategorie <em class="req">*</em></label><select name="category" required data-activity-category><option value="">– bitte wählen –</option>{% for c in activity_categories %}<option>{{ c }}</option>{% endfor %}</select></div>
+    <div class="field w-half"><label>Tätigkeit <em class="req">*</em></label><input name="activity" required list="activity-list" placeholder="Erst Kategorie wählen" autocomplete="off"><datalist id="activity-list"></datalist></div>
+    <div class="field w-half"><label>Probe / Rezeptur</label><input name="subject"></div>
+    <div class="field w-half"><label>Zuständig (Kürzel oder Name)</label><input name="responsible" value="{{ user.short_name or user.username }}"></div>
+    <div class="field w-half"><label>Geplant am</label><input type="date" name="planned_on"></div>
+    <div class="field w-half"><label>Status</label><select name="status">{% for s in activity_status %}<option {% if s == 'geplant' %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="field w-full"><label>Bemerkung</label><input name="remark"></div>
+  </div>
+  <div class="form-actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button class="btn btn-primary">Hinzufügen</button></div>
+</form></dialog>
+{% endif %}
+
+{% if activities %}
+<div class="card" id="status-kategorien"><h2 class="card-title">Status nach Kategorien</h2>
+<table class="table table-compact"><thead><tr><th>Kategorie</th><th>Start Bearbeitung</th><th>Ende Bearbeitung</th><th>Dokumentation abgeschlossen</th><th class="num">Tätigkeiten</th><th class="num">Erledigt</th><th>Status</th></tr></thead><tbody>
+{% for c in category_status %}<tr class="{% if c.count == 0 %}row-muted{% endif %}"><td>{{ c.category }}</td><td>{{ c.start|de_date }}</td><td>{{ c.end|de_date }}</td><td>{{ c.documented|de_date }}</td><td class="num">{{ c.count }}</td><td class="num">{{ c.done }}</td>
+<td><span class="badge badge-{{ {'abgeschlossen': 'success', 'in Bearbeitung': 'info'}.get(c.status, 'neutral') }}">{{ c.status }}</span></td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}

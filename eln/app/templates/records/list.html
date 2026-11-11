@@ -10,6 +10,7 @@
     <div class="dropdown"><button class="btn" type="button" data-dropdown>Export</button>
       <div class="dropdown-menu dropdown-right"><a href="{{ d.url }}/export.xlsx">Excel (.xlsx)</a><a href="{{ d.url }}/export.csv">CSV</a><a href="{{ d.url }}/export.json">JSON</a></div></div>
     {% endif %}
+    {% if d.key == 'order' and user.has('import') %}<a class="btn" href="/auftraege/compoundierplan">Compoundierplan (Excel) importieren</a>{% endif %}
     {% if d.key == 'recipe' %}<a class="btn" href="/rezepturen/vergleich">Rezepturen vergleichen</a>{% endif %}
     {% if can_create %}<a class="btn btn-primary" href="{{ d.url }}/neu">+ {{ d.label }} anlegen</a>{% endif %}
   </div>

@@ -38,6 +38,10 @@
 <div class="card"><h2 class="card-title">Dokumentation</h2><dl class="kv-grid">
 {% for attr, label in (('observations','Prozessbeobachtungen'),('disturbances','Störungen'),('deviations','Abweichungen'),('sampling','Probenahmen'),('evaluation','Bewertung')) %}<div class="kv kv-full"><dt>{{ label }}</dt><dd class="pre">{{ run[attr] or '–' }}</dd></div>{% endfor %}
 </dl></div>
+{% if run.protocol %}
+<div class="card"><h2 class="card-title">Weitere Protokolldaten (aus Excel-Extrusionsprotokoll)</h2>
+<table class="table table-compact"><tbody>{% for label, value in run.protocol %}<tr><td>{{ label }}</td><td>{{ value }}</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
 <div class="card"><h2 class="card-title">Erzeugte Proben / Chargen</h2>{% if samples %}<ul class="link-list">{% for s in samples %}<li><a href="/proben/{{ s.id }}">{{ s.label }}</a> {{ s.quantity|de_num }} {{ s.unit or '' }} {{ badge(s.status) }}</li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}</div>
 <dialog id="sample-dialog" class="dialog"><form method="post" action="/module/compoundierung/{{ run.id }}/probe">{{ csrf() }}
 <h3>Erzeugte Probe / Charge anlegen</h3>

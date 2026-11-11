@@ -144,8 +144,7 @@
   });
 
   /* --- Rezepturpositionen: Chargenfilter und Live-Summe ------------------------ */
-  const editor = $('[data-recipe-editor]');
-  if (editor) {
+  $$('[data-recipe-editor]').forEach((editor) => {
     const batches = json($('[data-batch-map]', editor)) || [];
     const fillBatches = (row) => {
       const mat = $('[data-material]', row), bsel = $('[data-batch]', row);
@@ -157,6 +156,7 @@
       });
     };
     const updateSum = () => {
+      if (!$('[data-percent-sum]', editor)) return;
       let sum = 0, missing = false;
       $$('[data-percent]', editor).forEach((i) => { const v = parseNum(i.value); if (v === null || isNaN(v)) missing = true; else sum += v; });
       $('[data-percent-sum]', editor).textContent = deNum(sum, 3);
@@ -170,7 +170,20 @@
     editor.addEventListener('input', updateSum);
     document.addEventListener('eln:row-added', (e) => { if (e.detail.prefix === 'item') fillBatches(e.detail.row); updateSum(); });
     updateSum();
-  }
+  });
+
+  /* --- Auftragsplanung: Tätigkeitsvorschläge je Kategorie -------------------- */
+  $$('[data-activity-form]').forEach((form) => {
+    const map = json($('[data-activity-map]', form)) || {};
+    const cat = $('[data-activity-category]', form), list = $('datalist', form), input = $('[name="activity"]', form);
+    const fill = () => {
+      list.innerHTML = '';
+      (map[cat.value] || []).forEach((a) => { const o = document.createElement('option'); o.value = a; list.appendChild(o); });
+      if (input && !input.value) input.placeholder = cat.value ? 'auswählen oder eingeben' : 'Erst Kategorie wählen';
+    };
+    cat.addEventListener('change', () => { if (input && !(map[cat.value] || []).includes(input.value)) input.value = ''; fill(); });
+    fill();
+  });
 
   /* --- Gerätewarnungen im Versuchsformular -------------------------------- */
   const devWarn = $('#device-warnings');

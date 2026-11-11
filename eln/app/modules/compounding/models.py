@@ -38,6 +38,8 @@ class CompoundingRun(TrackedMixin, Base):
     sampling: Mapped[str | None] = mapped_column(Text)
     evaluation: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(30), default="geplant", nullable=False)
+    # Weitere Protokollzeilen (z. B. aus dem Excel-Extrusionsprotokoll), als Liste [Bezeichnung, Wert]
+    protocol_json: Mapped[str | None] = mapped_column(Text)
 
     experiment = relationship("Experiment", lazy="joined")
     recipe = relationship("Recipe", lazy="joined")
@@ -53,6 +55,15 @@ class CompoundingRun(TrackedMixin, Base):
     @property
     def label(self) -> str:
         return f"{self.code} – {self.title}"
+
+    @property
+    def protocol(self) -> list:
+        import json
+
+        try:
+            return json.loads(self.protocol_json or "[]")
+        except ValueError:
+            return []
 
     @property
     def duration_min(self) -> float | None:

@@ -32,13 +32,28 @@
 - CSV/JSON/Excel-Export, Importe mit Prüflauf und Validierungsbericht, Importvorlagen.
 - Versuchs- und Auftragsdossier (PDF via ReportLab, JSON, Excel, ZIP mit Anhängen und Prüfsummen).
 - Datensicherung (ZIP, Manifest, Prüfung, Protokoll) und Wiederherstellung (Oberfläche und Konsole).
-- 74 pytest-Tests.
+- 74 pytest-Tests (inzwischen 81).
 
 ## Phase 6 – Gesamtprüfung
 - Automatischer Durchlauf aller verlinkten Seiten (325 Seiten) als Administrator ohne Fehler, alle Exporte/Dossiers
   geprüft; Browsertest mit Chromium (keine JavaScript- oder CSP-Fehler); gefundene Fehler behoben
   (Excel-Blattnamen, Metadaten-Schreibweise beim Import, Darstellung mehrzeiliger Texte).
 - README und Abnahme-Checkliste vervollständigt.
+
+## Erweiterung 1.1 – Auftragsplanung und Compoundierplan-Import
+- Neue Tabellen `order_activities`, `order_materials`, `order_log_entries`; neue Auftragsfelder (Anfrage am,
+  Ansprechperson, Cluster, Bemerkungen, Prüfvermerk); `recipes.recipe_type`; `recipe_items.source_recipe_id`
+  (Komponente ist selbst eine Rezeptur); `mod_compounding_runs.protocol_json`. Migration `0002` (mit automatischer
+  Sicherung vorher, an einer bestehenden Datenbank getestet).
+- `services/awt_import.py`: Excel-Leser, der Zellen über ihre Beschriftungen findet; Vorschau und Übernahme in einer
+  Transaktion; wiederholbar (Zuordnung über AWT-Nummer).
+- `services/planning.py`, `web/planning.py`: Arbeitsplan, Fortschritt, Status je Kategorie, Rohstoffliste,
+  Durchführung, Zusammensetzungsmatrix und aufgelöste Zusammensetzung; alles auch ohne Excel direkt erfassbar.
+- Auftragsdossier (PDF/JSON) um Arbeitsplan, Rohstoffliste, Durchführung und Zusammensetzungen erweitert.
+- Regeln des Imports: Vorlagenspalten am Ende der Rezepturblätter (nur Trägermaterial 100 %, ohne Bemerkung)
+  werden ignoriert; ausgeblendete Blätter werden nicht gelesen; der Reiter »Gesamtstatus« wird berechnet statt
+  gelesen; fehlende Materialien und Chargen werden als Stammdaten angelegt; manuell im ELN ergänzte
+  Durchführungseinträge bleiben bei einem erneuten Import erhalten, Tätigkeiten und Rohstoffliste werden ersetzt.
 
 ## Bekannte Einschränkungen (Version 1.0.0)
 - Mehrbenutzerbetrieb im Netz erst nach Umstieg auf PostgreSQL/SQL Server bzw. mit einem zentralen ELN-Server (siehe
